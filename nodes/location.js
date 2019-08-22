@@ -10,19 +10,32 @@ module.exports = function (RED) {
             var node = this;
             node.config = config;
             node.server = new Scanner(config.email, config.password);
-            // node.server.on('newLocation', (name) => this.sendLocation(name));
+            node.server.on('newLocation', (location) => this.sendLocation(location));
             node.server.on('newCircle', (circle) => this.sendCircle(circle));
+            node.server.on('newMember', (member) => this.sendMember(member));
         }
 
-        sendLocation(name, force = false) {
+        sendLocation(location, force = false) {
             var node = this;
-            if (!name) {
+            if (!location) {
                 return;
             }
 
             //outputs
             node.send([{
-                payload: name
+                payload: location
+            }]);
+        }
+
+        sendMember(member, force = false) {
+            var node = this;
+            if (!member) {
+                return;
+            }
+
+            //outputs
+            node.send([{
+                payload: member
             }]);
         }
 

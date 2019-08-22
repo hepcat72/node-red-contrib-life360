@@ -2,6 +2,7 @@ const EventEmitter = require('events');
 const life360 = require('./index.js');
 
 var session;
+var updated_locations = {};
 
 module.exports = class Life360Scanner extends EventEmitter {
   constructor(username, password) {
@@ -28,6 +29,25 @@ module.exports = class Life360Scanner extends EventEmitter {
     }
   }
 
+  sendChanged(members) {
+    let that = this;
+
+    for (var i = 0; i < members.length; i++) {
+      let member = members[i];
+      let locationName = member.location.name;
+
+      if (updated_locations[member.id]) {
+        if (updated_locations[member.id] !== locationName) {
+          updated_locations[member.id] = locationName;
+          that.emit('newMember', member);
+        }
+      } else {
+        updated_locations[member.id] = locationName;
+        that.emit('newMember', member);
+      }
+    }
+  }
+
   updateCircles(circles) {
     var that = this;
     for (var i = 0; i < circles.length; i++) {
@@ -36,6 +56,8 @@ module.exports = class Life360Scanner extends EventEmitter {
       this.getCircle(circleId, function (circle) {
         var location = circle['members'][0]['location']['name'];
         // that.emit('newLocation', location);
+        // that.emit('newCircle', circle);
+        that.sendChanged(circle.members);
       });
     }
   }
@@ -44,7 +66,6 @@ module.exports = class Life360Scanner extends EventEmitter {
     var that = this;
     life360.circle(session, circleId).then(circle => {
       callback(circle);
-      that.emit('newCircle', circle);
     });
   }
 
