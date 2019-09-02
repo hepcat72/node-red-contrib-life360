@@ -1,23 +1,21 @@
 <script type="text/javascript">
     RED.nodes.registerType('location', {
         category: 'life360',
-        color: '#7876EB',
+        color: '#7874EB',
+        icon: "360.png",
         defaults: {
             name: {
                 value: ""
             },
-            email: {
-                value: "",
-                required: true
-            },
-            password: {
-                value: "",
+            server: {
+                type: "life360-server",
                 required: true
             }
         },
         inputs: 0,
         outputs: 1,
-        icon: "360.png",
+        paletteLabel: 'in',
+        outputLabels: ["member"],
         label: function () {
             return this.name || "Location";
         }
@@ -25,22 +23,14 @@
 </script>
 
 <script type="text/x-red" data-template-name="location">
+    <link rel="stylesheet" href="life360/static/css/bootstrap-multiselect.css" type="text/css" />
+    
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
-
     <div class="form-row">
-        <label for="node-input-email"><i class="icon-tag"></i> Email</label>
-        <input type="text" id="node-input-email" placeholder="Email">
+        <label for="node-input-server" class="l-width"><i class="fa fa-globe"></i> Server</span></label>
+        <input type="text" id="node-input-server">
     </div>
-
-    <div class="form-row">
-        <label for="node-input-password"><i class="icon-tag"></i> Password</label>
-        <input type="text" id="node-input-password" placeholder="Password">
-    </div>
-</script>
-
-<script type="text/x-red" data-help-name="location">
-    <p>A simple node that converts the message payloads into all lower-case characters</p>
 </script>

@@ -1,84 +1,54 @@
-const EventEmitter = require('events');
-const life360 = require('./index.js');
+var request = require('request');
+var NODE_PATH = '/life360/';
 
-var session;
-var updated_locations = {};
+module.exports = function (RED) {
+  /**
+   * Enable http route to static files
+   */
+  RED.httpAdmin.get(NODE_PATH + 'static/*', function (req, res) {
+    var options = {
+      root: __dirname + '/static/',
+      dotfiles: 'deny'
+    };
+    res.sendFile(req.params[0], options);
+  });
 
-module.exports = class Life360Scanner extends EventEmitter {
-  constructor(username, password) {
-    super();
-    var that = this;
+  /**
+   * Enable http route to JSON itemlist for each controller (controller id passed as GET query parameter)
+   */
+  RED.httpAdmin.get(NODE_PATH + 'itemlist', function (req, res) {
+    var config = req.query;
+    var controller = RED.nodes.getNode(config.controllerID);
+    var forceRefresh = config.forceRefresh ? ['1', 'yes', 'true'].includes(config.forceRefresh.toLowerCase()) : false;
 
-    that.username = username;
-    that.password = password;
-
-    this.updateLife360();
-    setInterval(function () {
-      that.updateLife360();
-    }, 15000);
-  }
-
-  updateSession(callback) {
-    if (!session) {
-      life360.authenticate(this.username, this.password).then(s => {
-        session = s;
-        callback(session);
-      });
-    } else {
-      return callback(session);
-    }
-  }
-
-  sendChanged(members) {
-    let that = this;
-
-    for (var i = 0; i < members.length; i++) {
-      let member = members[i];
-      let locationName = member.location.name;
-
-      if (updated_locations[member.id]) {
-        if (updated_locations[member.id] !== locationName) {
-          updated_locations[member.id] = locationName;
-          that.emit('newMember', member);
+    if (controller && controller.constructor.name === "ServerNode") {
+      controller.getItemsList(function (items, groups) {
+        if (items) {
+          res.json({
+            items: items,
+            groups: groups
+          });
+        } else {
+          res.status(404).end();
         }
+      }, forceRefresh);
+    } else {
+      res.status(404).end();
+    }
+  });
+
+  RED.httpAdmin.get(NODE_PATH + 'statelist', function (req, res) {
+    var config = req.query;
+    var controller = RED.nodes.getNode(config.controllerID);
+    if (controller && controller.constructor.name === "ServerNode") {
+      var item = controller.getDevice(config.uniqueid);
+      if (item) {
+        res.json(item.state);
       } else {
-        updated_locations[member.id] = locationName;
-        that.emit('newMember', member);
+        res.status(404).end();
       }
+    } else {
+      res.status(404).end();
     }
-  }
-
-  updateCircles(circles) {
-    var that = this;
-    for (var i = 0; i < circles.length; i++) {
-      let circle = circles[i];
-      let circleId = circle['id'];
-      this.getCircle(circleId, function (circle) {
-        var location = circle['members'][0]['location']['name'];
-        // that.emit('newLocation', location);
-        // that.emit('newCircle', circle);
-        that.sendChanged(circle.members);
-      });
-    }
-  }
-
-  getCircle(circleId, callback) {
-    var that = this;
-    life360.circle(session, circleId).then(circle => {
-      callback(circle);
-    });
-  }
-
-  updateLife360() {
-    var that = this;
-    return this.updateSession(function (session) {
-      life360.circles(session)
-        .then(circles => {
-          if (circles.length == 0) {
-            throw new Error("No circles in your Life360.");
-          }
-          that.updateCircles(circles);
-        })
-    });
-  }
+  });
 }

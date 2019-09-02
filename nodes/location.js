@@ -1,5 +1,3 @@
-const Scanner = require('../life360.js');
-
 module.exports = function (RED) {
     class LocationNode {
         constructor(config) {
@@ -9,25 +7,29 @@ module.exports = function (RED) {
 
             var node = this;
             node.config = config;
-            node.server = new Scanner(config.email, config.password);
-            node.server.on('newLocation', (location) => this.sendLocation(location));
-            node.server.on('newCircle', (circle) => this.sendCircle(circle));
-            node.server.on('newMember', (member) => this.sendMember(member));
-        }
 
-        sendLocation(location, force = false) {
-            var node = this;
-            if (!location) {
-                return;
+            node.status({
+
+            }); //clean
+
+            //get server node
+            node.server = RED.nodes.getNode(node.config.server);
+            if (node.server) {
+
+            } else {
+                node.status({
+                    fill: "red",
+                    shape: "dot",
+                    text: "Server is required"
+                });
             }
 
-            //outputs
-            node.send([{
-                payload: location
-            }]);
+            node.server.onChange(function (member) {
+                node.sendMemeber(member);
+            });
         }
 
-        sendMember(member, force = false) {
+        sendMemeber(member) {
             var node = this;
             if (!member) {
                 return;
@@ -37,19 +39,7 @@ module.exports = function (RED) {
             node.send([{
                 payload: member
             }]);
-        }
-
-        sendCircle(circle, force = false) {
-            var node = this;
-            if (!circle) {
-                return;
-            }
-
-            //outputs
-            node.send([{
-                payload: circle
-            }]);
-        }
+        };
     }
 
     RED.nodes.registerType("location", LocationNode, {});
