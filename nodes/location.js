@@ -3,8 +3,6 @@ module.exports = function (RED) {
         constructor(config) {
             RED.nodes.createNode(this, config);
 
-            console.log(config);
-
             var node = this;
             node.config = config;
 
@@ -35,10 +33,25 @@ module.exports = function (RED) {
                 return;
             }
 
-            //outputs
-            node.send([{
-                payload: member
-            }]);
+            if (node.config.outputAtStartup || node.sended) {
+                //outputs
+                node.send([{
+                    payload: member
+                }]);
+
+                node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text: member.location.name
+                });
+            } else {
+                node.sended = true;
+                node.status({
+                    fill: "yellow",
+                    shape: "ring",
+                    text: "Waiting for location change."
+                });
+            }
         };
     }
 

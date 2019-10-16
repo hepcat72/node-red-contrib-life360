@@ -3,13 +3,18 @@ const life360 = require('../index.js');
 var session;
 var updated_locations = {};
 
+function isSet(value) {
+    return typeof value !== 'undefined' && value != null;
+}
+
+function isEmpty(obj) {
+    return Object.keys(obj).length === 0;
+}
+
 module.exports = function (RED) {
     class ServerNode {
         constructor(n) {
             RED.nodes.createNode(this, n);
-
-            console.log(n);
-
             var node = this;
 
             node.username = n.username;
@@ -44,18 +49,20 @@ module.exports = function (RED) {
         sendChanged(members) {
             let node = this;
 
-            for (var i = 0; i < members.length; i++) {
-                let member = members[i];
-                let locationName = member.location.name;
+            if (isSet(members)) {
+                for (var i = 0; i < members.length; i++) {
+                    let member = members[i];
+                    let locationName = member.location.name;
 
-                if (updated_locations[member.id]) {
-                    if (updated_locations[member.id] !== locationName) {
+                    if (updated_locations[member.id]) {
+                        if (updated_locations[member.id] !== locationName) {
+                            updated_locations[member.id] = locationName;
+                            node.sendMember(member);
+                        }
+                    } else {
                         updated_locations[member.id] = locationName;
                         node.sendMember(member);
                     }
-                } else {
-                    updated_locations[member.id] = locationName;
-                    node.sendMember(member);
                 }
             }
         }
@@ -95,8 +102,6 @@ module.exports = function (RED) {
             if (!member) {
                 return;
             }
-
-            console.log(member.location.name);
 
             if (this.valueChangedCallback) {
                 this.valueChangedCallback(member);
