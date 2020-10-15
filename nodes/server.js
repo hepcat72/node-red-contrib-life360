@@ -59,10 +59,9 @@ module.exports = function (RED) {
                             updated_locations[member.id] = locationName;
                             node.sendMember(member);
                         }
-                    } else {
-                        updated_locations[member.id] = locationName;
-                        node.sendMember(member);
                     }
+
+                    updated_locations[member.id] = locationName;
                 }
             }
         }
