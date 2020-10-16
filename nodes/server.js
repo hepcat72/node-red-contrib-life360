@@ -54,14 +54,22 @@ module.exports = function (RED) {
                     let member = members[i];
                     let locationName = member.location.name;
 
-                    if (updated_locations[member.id]) {
-                        if (updated_locations[member.id] !== locationName) {
+                    // Added checks to avoid invalidly null location names (when location hasn't actually changed)
+                    if (member && member.location && member.location.source && member.id && updated_locations[member.id]) {
+                        if ((updated_locations[member.id] && !locationName) || (!updated_locations[member.id] && locationName) || (locationName && updated_locations[member.id] !== locationName)) {
                             updated_locations[member.id] = locationName;
                             node.sendMember(member);
                         }
                     }
 
-                    updated_locations[member.id] = locationName;
+                    // "source" appears to possibly indicate when a null location name is valid (i.e. not at a named place)
+                    // There are 2 circumstances when location name is null:
+                    //   1. bad data when a person is actually at a named place
+                    //   2. when a person is not actually at a named place
+                    // I haven't confirmed this, but "source" being defined likely indicates the name is valid (whether it's null or not)
+                    if (member && member.location && member.location.source) {
+                        updated_locations[member.id] = locationName;
+                    }
                 }
             }
         }
