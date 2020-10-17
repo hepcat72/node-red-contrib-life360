@@ -46,22 +46,32 @@ module.exports = function (RED) {
             }
         }
 
-        sendChanged(members) {
+        sendChanged(circle) {
             let node = this;
+            let circleName = circle.name;
+            let members = circle.members;
+            let circleId = circle.id;
 
             if (isSet(members)) {
                 for (var i = 0; i < members.length; i++) {
                     let member = members[i];
                     let locationName = member.location.name;
-
-                    if (updated_locations[member.id]) {
-                        if (updated_locations[member.id] !== locationName) {
-                            updated_locations[member.id] = locationName;
-                            node.sendMember(member);
-                        }
+                    let oldLocationName = null;
+                    if (updated_locations[circleId] && updated_locations[circleId][member.id]) {
+                        oldLocationName = updated_locations[circleId][member.id]; 
                     }
 
-                    updated_locations[member.id] = locationName;
+                    if ((oldLocationName && !locationName) || (!oldLocationName && locationName) || (locationName && oldLocationName && oldLocationName !== locationName)) {
+                        //node.warn("CHANGE   : " + member.firstName + " in circle " + circleName + " has New location: " + locationName + " differs from old location: " + oldLocationName + " item " + circleId + "." + member.id);
+                        node.sendMember(member);
+                    }
+
+                    if ( updated_locations[circleId] ) {
+                        updated_locations[circleId][member.id] = locationName;
+                    } else {
+                        updated_locations[circleId] = {};
+                        updated_locations[circleId][member.id] = locationName;
+                    }
                 }
             }
         }
@@ -72,7 +82,7 @@ module.exports = function (RED) {
                 let circle = circles[i];
                 let circleId = circle['id'];
                 node.getCircle(circleId, function (circle) {
-                    node.sendChanged(circle.members);
+                    node.sendChanged(circle);
                 });
             }
         }
@@ -99,11 +109,14 @@ module.exports = function (RED) {
         sendMember(member) {
             var node = this;
             if (!member) {
+                node.warn("No member");
                 return;
             }
 
             if (this.valueChangedCallback) {
                 this.valueChangedCallback(member);
+            } else {
+                node.warn("No callback");
             }
         }
     }
