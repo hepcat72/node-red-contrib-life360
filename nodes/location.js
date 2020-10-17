@@ -22,12 +22,12 @@ module.exports = function (RED) {
                 });
             }
 
-            node.server.onChange(function (member) {
-                node.sendMemeber(member);
+            node.server.onChange(function (member, firstTime) {
+                node.sendMemeber(member, firstTime);
             });
         }
 
-        sendMemeber(member) {
+        sendMemeber(member, firstTime) {
             var node = this;
             if (!member) {
                 return;
@@ -39,13 +39,19 @@ module.exports = function (RED) {
                     payload: member
                 }]);
 
+                //If they left a place, turn null into empty string
+                let whereName = member.location.name;
+                if (!whereName) {
+                    whereName = "other";
+                }
+
                 node.status({
                     fill: "green",
                     shape: "dot",
-                    text: member.location.name
+                    text: whereName
                 });
             } else {
-                node.sended = true;
+                node.sended = !firstTime;
                 node.status({
                     fill: "yellow",
                     shape: "ring",
