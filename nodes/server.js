@@ -46,41 +46,46 @@ module.exports = function (RED) {
             }
         }
 
-        sendChanged(members) {
+        sendChanged(circle, firstTime) {
             let node = this;
+            let circleName = circle.name;
+            let members = circle.members;
+            let circleId = circle.id;
 
             if (isSet(members)) {
                 for (var i = 0; i < members.length; i++) {
                     let member = members[i];
+                    //let locationName = circleName + ": " + member.location.name;
                     let locationName = member.location.name;
-
-                    // Added checks to avoid invalidly null location names (when location hasn't actually changed)
-                    if (member && member.location && member.location.source && member.id && updated_locations[member.id]) {
-                        if ((updated_locations[member.id] && !locationName) || (!updated_locations[member.id] && locationName) || (locationName && updated_locations[member.id] !== locationName)) {
-                            updated_locations[member.id] = locationName;
-                            node.sendMember(member);
-                        }
+                    let oldLocationName = null;
+                    if (updated_locations[circleId] && updated_locations[circleId][member.id]) {
+                        oldLocationName = updated_locations[circleId][member.id]; 
                     }
 
-                    // "source" appears to possibly indicate when a null location name is valid (i.e. not at a named place)
-                    // There are 2 circumstances when location name is null:
-                    //   1. bad data when a person is actually at a named place
-                    //   2. when a person is not actually at a named place
-                    // I haven't confirmed this, but "source" being defined likely indicates the name is valid (whether it's null or not)
-                    if (member && member.location && member.location.source) {
-                        updated_locations[member.id] = locationName;
+                    if ((oldLocationName && !locationName) || (!oldLocationName && locationName) || (locationName && oldLocationName && oldLocationName !== locationName)) {
+                        //node.warn("First? " + firstTime + " CHANGE   : " + member.firstName + " in circle " + circleName + " has New location: " + locationName + " differs from old location: " + oldLocationName + " item " + circleId + "." + member.id);
+                        node.sendMember(member, firstTime);
                     }
+
+                    if ( updated_locations[circleId] ) {
+                        updated_locations[circleId][member.id] = locationName;
+                    } else {
+                        updated_locations[circleId] = {};
+                        updated_locations[circleId][member.id] = locationName;
+                    }
+                    //node.warn("Saved location: " + updated_locations[circleId][member.id] + " for " + member.firstName + " in circle " + circleName + " should be " + locationName);
                 }
             }
         }
 
         updateCircles(circles) {
             var node = this;
+            let firstTime = isEmpty(updated_locations);
             for (var i = 0; i < circles.length; i++) {
                 let circle = circles[i];
                 let circleId = circle['id'];
                 node.getCircle(circleId, function (circle) {
-                    node.sendChanged(circle.members);
+                    node.sendChanged(circle, firstTime);
                 });
             }
         }
@@ -104,14 +109,17 @@ module.exports = function (RED) {
             });
         }
 
-        sendMember(member) {
+        sendMember(member, firstTime) {
             var node = this;
             if (!member) {
+                node.warn("No member");
                 return;
             }
 
             if (this.valueChangedCallback) {
-                this.valueChangedCallback(member);
+                this.valueChangedCallback(member, firstTime);
+            } else {
+                node.warn("No callback");
             }
         }
     }
