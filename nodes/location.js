@@ -22,27 +22,26 @@ module.exports = function (RED) {
                 });
             }
 
-            node.server.onChange(function (member, firstTime) {
-                node.sendMemeber(member, firstTime);
+            node.server.onChange(function (member, numCheck) {
+                node.sendMemeber(member, numCheck);
             });
         }
 
-        sendMemeber(member, firstTime) {
+        sendMemeber(member, numCheck) {
             var node = this;
-            if (!member) {
-                return;
-            }
 
-            if (node.config.outputAtStartup || node.sended) {
-                //outputs
-                node.send([{
-                    payload: member
-                }]);
+            if (!!member) {
+                if(node.config.outputAtStartup || numCheck > 1) {
+                    node.warn("Sending " + member.firstName + ", " + member.location.name);
+                    //outputs
+                    node.send([{
+                        payload: member
+                    }]);
+                }
 
-                //If they left a place, turn null into empty string
                 let whereName = member.location.name;
                 if (!whereName) {
-                    whereName = "other";
+                    whereName = "Unnamed Place";
                 }
 
                 node.status({
@@ -51,11 +50,11 @@ module.exports = function (RED) {
                     text: whereName
                 });
             } else {
-                node.sended = !firstTime;
+                let wtmsg = "Checking location. (" + numCheck + ")";
                 node.status({
                     fill: "yellow",
                     shape: "ring",
-                    text: "Waiting for location change."
+                    text: wtmsg
                 });
             }
         };

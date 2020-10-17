@@ -2,6 +2,7 @@ const life360 = require('../index.js');
 
 var session;
 var updated_locations = {};
+var numCheck = 0;
 
 function isSet(value) {
     return typeof value !== 'undefined' && value != null;
@@ -46,7 +47,7 @@ module.exports = function (RED) {
             }
         }
 
-        sendChanged(circle, firstTime) {
+        sendChanged(circle, numCheck) {
             let node = this;
             let circleName = circle.name;
             let members = circle.members;
@@ -62,9 +63,13 @@ module.exports = function (RED) {
                         oldLocationName = updated_locations[circleId][member.id]; 
                     }
 
+                    //node.warn(member.firstName + " at: " + locationName + " JSON: " + JSON.stringify(member));
                     if ((oldLocationName && !locationName) || (!oldLocationName && locationName) || (locationName && oldLocationName && oldLocationName !== locationName)) {
-                        //node.warn("First? " + firstTime + " CHANGE   : " + member.firstName + " in circle " + circleName + " has New location: " + locationName + " differs from old location: " + oldLocationName + " item " + circleId + "." + member.id);
-                        node.sendMember(member, firstTime);
+                        node.warn("Num Check: " + numCheck + " CHANGE   : " + member.firstName + " in circle " + circleName + " has New location: " + locationName + " differs from old location: " + oldLocationName);
+                        node.sendMember(member, numCheck);
+                    } else {
+                        //node.warn("NO CHANGE: " + member.firstName + "." + circleName + ": " + locationName + " from: " + oldLocationName);
+                        node.sendMember(null, numCheck);
                     }
 
                     if ( updated_locations[circleId] ) {
@@ -80,12 +85,12 @@ module.exports = function (RED) {
 
         updateCircles(circles) {
             var node = this;
-            let firstTime = isEmpty(updated_locations);
+            numCheck++;
             for (var i = 0; i < circles.length; i++) {
                 let circle = circles[i];
                 let circleId = circle['id'];
                 node.getCircle(circleId, function (circle) {
-                    node.sendChanged(circle, firstTime);
+                    node.sendChanged(circle, numCheck);
                 });
             }
         }
@@ -109,15 +114,11 @@ module.exports = function (RED) {
             });
         }
 
-        sendMember(member, firstTime) {
+        sendMember(member, numCheck) {
             var node = this;
-            if (!member) {
-                node.warn("No member");
-                return;
-            }
 
             if (this.valueChangedCallback) {
-                this.valueChangedCallback(member, firstTime);
+                this.valueChangedCallback(member, numCheck);
             } else {
                 node.warn("No callback");
             }
