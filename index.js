@@ -72,6 +72,7 @@ module.exports.circles = function (session) {
     request(options)
       .then(response => {
         let circles = response.body.circles;
+        //console.log("Returning circles: " + JSON.stringify(circles));
         resolve(circles);
       });
   });
@@ -96,7 +97,55 @@ module.exports.circle = function (session, circleId) {
     request(options)
       .then(response => {
         let circle = response.body;
+//        console.log("Returning circle: " + JSON.stringify(circle));
         resolve(circle);
+      });
+  });
+}
+
+/**
+ * Fetch the user's places
+ */
+module.exports.places = function (session, circleId) {
+  if (!session) throw new Error("session not specified");
+  return new Promise((resolve, reject) => {
+    const LIFE360_PLACES_URL = `https://api.life360.com/v3/circles/${circleId}/allplaces`
+    const options = {
+      url: LIFE360_PLACES_URL,
+      headers: {
+        'Authorization': `${session.token_type} ${session.access_token}`
+      },
+      json: true
+    };
+    // console.log(`Fetching places at ${LIFE360_PLACES_URL}`);
+    request(options)
+      .then(response => {
+        let places = response.body.places;
+        //console.log("Returning places: " + JSON.stringify(places));
+        resolve(places);
+      });
+  });
+}
+
+/**
+ * Fetch the user's members
+ */
+module.exports.members = function (session, circleId) {
+  if (!session) throw new Error("session not specified");
+  return new Promise((resolve, reject) => {
+    const LIFE360_MEMBERS_URL = `https://api.life360.com/v3/circles/${circleId}/members`
+    const options = {
+      url: LIFE360_MEMBERS_URL,
+      headers: {
+        'Authorization': `${session.token_type} ${session.access_token}`
+      },
+      json: true
+    };
+    request(options)
+      .then(response => {
+        let members = response.body.members;
+        //console.log("Returning members: " + JSON.stringify(members));
+        resolve(members);
       });
   });
 }

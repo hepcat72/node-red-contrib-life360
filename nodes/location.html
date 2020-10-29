@@ -14,6 +14,22 @@
             outputAtStartup: {
                 value: true,
                 required: true,
+            },
+            circle: {
+                value: "any",
+                required: true,
+            },
+            place: {
+                value: "any",
+                required: true,
+            },
+            person: {
+                value: "any",
+                required: true,
+            },
+            event: {
+                value: "either",
+                required: true,
             }
         },
         inputs: 0,
@@ -22,6 +38,306 @@
         outputLabels: ["member"],
         label: function () {
             return this.name || "Location";
+        },
+        oneditprepare: function() { 
+            var node = this;
+            var configNodeId = $("#node-input-server").val();
+
+            $("#node-input-server").change(function() {
+                $('#node-input-circle').trigger('change');
+            });
+
+            $("#node-input-circle").change(function() {
+                var prevConfigNode = node.server;
+                var configNodeId = $("#node-input-server").val();
+
+                console.log("Circle Change: Previously selected server: " + prevConfigNode);
+                console.log("Circle Change: Selected server: " + configNodeId);
+
+                if(typeof configNodeId === 'undefined' || configNodeId == null) {
+                    $("#node-input-circle").html("");
+                    $("<option value='any'>Any</option>").appendTo("#node-input-circle");
+                    $("#node-input-circle").val('any');
+                    $('#node-input-place').trigger('change');
+                    $('#node-input-person').trigger('change');
+                    return(null);
+                }
+
+                var selectedCircle = $('#node-input-circle').val();
+                var prevSelectedCircle = node.circle;
+                var circleId = selectedCircle;
+                if(typeof selectedCircle === 'undefined' || selectedCircle == null) {
+                    circleId = prevSelectedCircle;
+                }
+
+                $.getJSON('location/circles/' + node.id + '/' + configNodeId + '/none/none', function(data) {
+                    // The response is a json hash, containing all the available circles
+                    var prevSelectedCircle = node.circle;
+                    var selectedCircle = $("#node-input-circle").val();
+                    var circleId = selectedCircle;
+                    if(typeof selectedCircle === 'undefined' || selectedCircle == null) {
+                        circleId = prevSelectedCircle;
+                    }
+
+                    console.log("Circle Change: Previously Selected circle: " + prevSelectedCircle);
+                    console.log("Circle Change: Selected circle: " + selectedCircle);
+                    console.log("Circle Change: Setting circle: " + circleId);
+
+                    // Show all available circles in the dropdown
+                    //let selectedCircle = $("#node-input-circle").val();
+                    $("#node-input-circle").html("");
+
+                    $("<option value='any'>Any</option>").appendTo("#node-input-circle");
+
+                    for (const [circleId, circleName] of Object.entries(data)) {
+                        if(circleId !== "selected") {
+                            $("<option value='" + circleId + "'> " + circleName + "</option>").appendTo("#node-input-circle");
+                        }
+                    }
+
+                    $("#node-input-circle").val(circleId);
+                    $('#node-input-place').trigger('change');
+                    //$('#node-input-person').trigger('change');
+                });
+            });
+
+            $("#node-input-place").change(function() {
+                var selectedCircle = $('#node-input-circle').val();
+                var prevSelectedCircle = node.circle;
+                var circleId = selectedCircle;
+                if(typeof selectedCircle === 'undefined' || selectedCircle == null) {
+                    circleId = prevSelectedCircle;
+                }
+
+                console.log("Place Change: Previously selected circle: " + prevSelectedCircle);
+                console.log("Place Change: Selected circle: " + selectedCircle);
+                console.log("Place Change: Setting circle: " + circleId);
+
+                ////
+                //// Update the places
+                ////
+
+                var prevSelectedPlace = node.place;
+                var selectedPlace = $("#node-input-place").val();
+                var placeId = selectedPlace;
+
+                //If there's no place selection, set the previously selected place
+                if(typeof selectedPlace === 'undefined' || selectedPlace == null) {
+                    placeId = prevSelectedPlace;
+                }
+                //If there's no selected place or if there was a new circle selection
+                if(typeof placeId === 'undefined' || placeId == null || ((typeof placeId === 'undefined' || placeId == null) && circleId === selectedCircle)) {
+                    placeId = 'any';
+                }
+
+                if(typeof selectedPlace !== 'undefined' && selectedPlace != null && selectedCircle === prevSelectedCircle && selectedPlace === prevSelectedPlace) {
+                    if(circleId === 'any') {
+                        $("#node-input-place").html("");
+                        $("<option value='any'>Any</option>").appendTo("#node-input-place");
+                        $('#node-input-place').val('any');
+                        $('#node-input-person').trigger('change');
+                        return(null);
+                    }
+                    //$('#node-input-person').trigger('change');
+                    //return(null);
+                } else if(typeof selectedCircle !== 'undefined' && selectedCircle != null &&
+                          ((selectedCircle !== prevSelectedCircle &&
+                            (selectedPlace === 'undefined' || selectedPlace == null || selectedPlace === prevSelectedPlace)) )) { // ||
+                           //(selectedCircle === prevSelectedCircle &&
+                           // (typeof selectedPlace !== 'undefined' && selectedPlace != null) &&
+                           // (selectedPlace !== prevSelectedPlace)))) {
+                    placeId = 'any';
+                }
+
+                console.log("Place Change: Previously selected place: " + prevSelectedPlace);
+                console.log("Place Change: Selected place: " + $('#node-input-place').val());
+                console.log("Place Change: Setting place: " + placeId);
+
+                if(circleId === 'any') {
+                    $("#node-input-place").html("");
+                    $("<option value='any'>Any</option>").appendTo("#node-input-place");
+                    $('#node-input-place').val('any');
+                    $('#node-input-person').trigger('change');
+                    return(null);
+                }
+
+                // Load the available categories from the server
+                $.getJSON('location/places/' + node.id + '/' + configNodeId + '/' + circleId + '/' + placeId, function(data) {
+
+                    console.log("Building place select list");
+
+                    $("#node-input-place").html("");
+
+                    $("<option value='any'>Any</option>").appendTo("#node-input-place");
+
+                    var selectedPlace = 'any';
+                    // Show all available people in the dropdown
+                    for (const [placeId, placeName] of Object.entries(data)) {
+
+                        console.log("Circle Change: Option: " + placeId + " " + placeName);
+
+                        if(placeId !== "selected") {
+                            $("<option value='" + placeId + "'> " + placeName + "</option>").appendTo("#node-input-place");
+                        } else if(data[placeName]) {
+                            selectedPlace = placeName;
+                        }
+                    }
+
+                    console.log("Place Change: committing place: " + selectedPlace);
+
+                    $('#node-input-place').val(selectedPlace);
+                    //$('#node-input-place').trigger('change');
+                    $('#node-input-person').trigger('change');
+                });
+            });
+
+            $("#node-input-person").change(function() {
+                var selectedCircle = $('#node-input-circle').val();
+                var prevSelectedCircle = node.circle;
+                var circleId = selectedCircle;
+                if(typeof selectedCircle === 'undefined' || selectedCircle == null) {
+                    circleId = prevSelectedCircle;
+                }
+
+                console.log("Person Change: Previously selected circle: " + prevSelectedCircle);
+                console.log("Person Change: Selected circle: " + selectedCircle);
+                console.log("Person Change: Setting circle: " + circleId);
+
+                if(circleId === 'any') {
+                    $("#node-input-person").html("");
+                    $("<option value='any'>Any</option>").appendTo("#node-input-person");
+                    $("<option value='first'>First</option>").appendTo("#node-input-person");
+                    $("<option value='last'>Last</option>").appendTo("#node-input-person");
+                    $('#node-input-person')[0][1].disabled = true;
+                    $('#node-input-person')[0][2].disabled = true;
+                    $('#node-input-event').trigger('change');
+                    return(null);
+                } else {
+                    $('#node-input-person')[0][1].disabled = false;
+                    $('#node-input-person')[0][2].disabled = false;
+                }
+
+                ////
+                //// Update the people
+                ////
+
+                var prevSelectedPerson = node.person;
+                var selectedPerson = $('#node-input-person').val();
+                var personId = selectedPerson;
+                if(typeof selectedPerson === 'undefined' || selectedPerson == null) {
+                    personId = prevSelectedPerson;
+                }
+                if(typeof personId === 'undefined' || personId == null) {
+                    personId = 'any';
+                }
+
+                console.log("Person Change: Previously selected person: " + prevSelectedPerson);
+                console.log("Person Change: Selected person: " + $('#node-input-person').val());
+
+                // Load the available categories from the server
+                $.getJSON('location/people/' + node.id + '/' + configNodeId + '/' + circleId + '/' + personId, function(data) {
+                    $("#node-input-person").html("");
+
+                    $("<option value='any'>Any</option>").appendTo("#node-input-person");
+                    $("<option value='first'>First</option>").appendTo("#node-input-person");
+                    $("<option value='last'>Last</option>").appendTo("#node-input-person");
+
+                    var selectedPerson = 'any';
+                    // Show all available people in the dropdown
+                    for (const [personId, personName] of Object.entries(data)) {
+                        if(personId !== "selected") {
+                            $("<option value='" + personId + "'> " + personName + "</option>").appendTo("#node-input-person");
+                        } else {
+                            selectedPerson = personName;
+                        }
+                    }
+
+                    if($('#node-input-place').val() === 'any') {
+console.log("Disabling first/last");
+                        $('#node-input-person')[0][1].disabled = true;
+                        $('#node-input-person')[0][2].disabled = true;
+                        if(selectedPerson === 'first' || selectedPerson === 'last') {
+                            selectedPerson = 'any';
+                        }
+                    } else {
+console.log("Enabling first/last");
+                        $('#node-input-person')[0][1].disabled = false;
+                        $('#node-input-person')[0][2].disabled = false;
+                    }
+
+                    $('#node-input-person').val(selectedPerson);
+                    $('#node-input-event').trigger('change');
+                });
+            });
+
+            $("#node-input-event").change(function() {
+                var selectedCircle = $('#node-input-circle').val();
+                var prevSelectedCircle = node.circle;
+                var circleId = selectedCircle;
+                if(typeof selectedCircle === 'undefined' || selectedCircle == null) {
+                    circleId = prevSelectedCircle;
+                }
+                var circleChanged = false;
+                if(circleId !== prevSelectedCircle) {
+                    circleChanged = true;
+                }
+
+                var prevSelectedPerson = node.person;
+                var selectedPerson = $('#node-input-person').val();
+                var personId = selectedPerson;
+                if(typeof selectedPerson === 'undefined' || selectedPerson == null) {
+                    personId = prevSelectedPerson;
+                }
+                if(typeof personId === 'undefined' || personId == null) {
+                    personId = 'any';
+                }
+                var personChanged = false;
+                if(personId !== prevSelectedPerson) {
+                    personChanged = true;
+                }
+
+                if(personChanged && typeof selectedPerson !== 'undefined' && selectedPerson != null) {
+                    personId = selectedPerson;
+                }
+
+                //console.log("Person Change: Previously selected person: " + prevSelectedPerson);
+                //console.log("Person Change: Selected person: " + $('#node-input-person').val());
+
+                if (personId) {
+                    if ( personId === "first" ) {
+                        $("#node-input-event").val("arrive");
+                        for (var x = 0; x < $("#node-input-event")[0].childElementCount; x++) {
+                            if (x !== 0) {
+                                $('#node-input-event')[0][x].disabled = true;
+                            } else {
+                                $('#node-input-event')[0][x].disabled = false;
+                            }
+                        }
+                    } else if ( personId === "last" ) {
+                        $("#node-input-event").val("leave");
+                        for (var x = 0; x < $("#node-input-event")[0].childElementCount; x++) {
+                            if (x !== 1) {
+                                $('#node-input-event')[0][x].disabled = true;
+                            } else {
+                                $('#node-input-event')[0][x].disabled = false;
+                            }
+                        }
+                    } else if(circleId === 'any') {
+                        //$("#node-input-event").val('either');
+                        for (var x = 0; x < $("#node-input-event")[0].childElementCount; x++) {
+                            $('#node-input-event')[0][x].disabled = false;
+                        }
+                    } else {
+                        for (var x = 0; x < $("#node-input-event")[0].childElementCount; x++) {
+                            $('#node-input-event')[0][x].disabled = false;
+                        }
+                    }
+                } else {
+                    for (var x = 0; x < $("#node-input-event")[0].childElementCount; x++) {
+                        $('#node-input-event')[0][x].disabled = false;
+                    }
+                }
+            });
         }
     });
 </script>
@@ -31,14 +347,40 @@
     
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
+        <input type="text" id="node-input-name" placeholder="Name"/>
     </div>
     <div class="form-row">
         <label for="node-input-server" class="l-width"><i class="fa fa-globe"></i> Server</span></label>
-        <input type="text" id="node-input-server">
+        <input type="text" id="node-input-server"/>
     </div>
     <div class="form-row">
-        <label for='node-input-outputAtStartup' class="l-width"><i class='fa fa-share-square'></i> "Trigger on Startup"</span></label>
+        <label for="node-input-circle"><i class="fa fa-circle-o"></i> Circle</label>
+        <select id="node-input-circle"></select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-place"><i class="fa fa-home"></i> Place</label>
+        <select id="node-input-place"></select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-person"><i class="fa fa-user-circle-o"></i> Person</label>
+        <select id="node-input-person">
+            <option value='any'>Any</option>
+            <option value='first'>First</option>
+            <option value='last'>Last</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-event"><i class="fa fa-map-marker"></i> Event Type</label>
+        <select id="node-input-event">
+            <option value='arrive'>Arrive</option>
+            <option value='leave'>Leave</option>
+            <option value='either' selected='true'>Arrive or Leave</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for='node-input-outputAtStartup' class="l-width">
+            <i class='fa fa-rocket'></i> Trigger arrivals on Startup</span>
+        </label>
         <input type="checkbox" id="node-input-outputAtStartup" checked="checked" style="display: inline-block; width: auto; vertical-align: top;"> <span data-i18n="label.start_output_help"></span></input>
     </div>
 </script>

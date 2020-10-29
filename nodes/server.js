@@ -114,6 +114,35 @@ module.exports = function (RED) {
             });
         }
 
+        getCircles() {
+            var node = this;
+            return node.updateSession(function (session) {
+                return life360.circles(session)
+                    .then(circles => {
+                        //console.log("this gets called after the end of the main stack. the value received and returned is: " + JSON.stringify(circles));
+                        return circles;
+                    })
+            });
+        }
+
+        getPeople(circleId, callback) {
+            var node = this;
+            
+            return life360.members(session, circleId).then(members => {
+                //console.log("Members: " + members);
+                callback(members);
+            });
+        }
+
+        getPlaces(circleId, callback) {
+            var node = this;
+
+            return life360.places(session, circleId).then(places => {
+                //console.log("Places: " + places);
+                callback(places);
+            });
+        }
+
         sendMember(member, numCheck) {
             var node = this;
 
