@@ -85,13 +85,10 @@ module.exports = function (RED) {
                             shape: "dot",
                             text: status_msg
                         });
+
+                        console.log("Triggered event detection condition.  node info: start: " + node.config.outputAtStartup + " circle: " + node.config.circle + " place: " + node.config.place + " person: " + node.config.person + " event: " + node.config.event + " event info: numCheck: " + numCheck + " member: " + member.firstName + " circle: " + circleId + " prev loc: " + prevLocId + " cur loc: " + curLocId + " numPrevLocBefore: " + numPrevLocBefore + " numCurLocBefore: " + numCurLocBefore);
                     } else {
-                        node.warn("Unknown event detection condition.  node info: start: " + node.config.outputAtStartup + " circle: " + node.config.circle + " place: " + node.config.place + " person: " + node.config.person + " event: " + node.config.event + " event info: numCheck: " + numCheck + " member: " + member.firstName + " circle: " + circleId + " prev loc: " + prevLocId + " cur loc: " + curLocId + " numPrevLocBefore: " + numPrevLocBefore + " numCurLocBefore: " + numCurLocBefore);
-                        node.status({
-                            fill: "red",
-                            shape: "dot",
-                            text: "Unknown event detection condition."
-                        });
+                        console.log("Skipped event detection condition.  node info: start: " + node.config.outputAtStartup + " circle: " + node.config.circle + " place: " + node.config.place + " person: " + node.config.person + " event: " + node.config.event + " event info: numCheck: " + numCheck + " member: " + member.firstName + " circle: " + circleId + " prev loc: " + prevLocId + " cur loc: " + curLocId + " numPrevLocBefore: " + numPrevLocBefore + " numCurLocBefore: " + numCurLocBefore);
                     }
                 } else {
                     node.status({

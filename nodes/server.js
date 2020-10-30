@@ -22,10 +22,10 @@ module.exports = function (RED) {
             node.username = n.username;
             node.password = n.password;
 
-            node.valueChangedCallback = null;
+            node.valueChangedCallbacks = [];
 
             this.onChange = function (callback) {
-                this.valueChangedCallback = callback;
+                this.valueChangedCallbacks.push(callback);
             };
 
             if (node.username && node.password) {
@@ -119,7 +119,7 @@ module.exports = function (RED) {
 
                             status += "left " + prevLocationNames[memberId];
 
-                            if(locPopBefore[prevLocId] && isSet(locPopBefore[prevLocId])) {
+                            if(isSet(locPopBefore[prevLocId])) {
                                 numPrevLocBefore = locPopBefore[prevLocId];
                                 //Update for the next loop iteration
                                 //Can prob assume this, but just to be on the safe side...
@@ -137,11 +137,15 @@ module.exports = function (RED) {
                                 status += " and ";
                             }
                             status += " arrived at " + movedMember.location.name;
-
-                            if(locPopBefore[curLocId] && isSet(locPopBefore[curLocId])) {
+console.log("Checking population of " + movedMember.location.name);
+                            if(isSet(locPopBefore[curLocId])) {
                                 numCurLocBefore = locPopBefore[curLocId];
                                 //Update for the next loop iteration
                                 locPopBefore[curLocId]++;
+console.log("Added 1 to location due to " + movedMember.firstName + "'s arrival");
+                            } else {
+                                //This happens when the location is not in updated_locations yet
+                                locPopBefore[curLocId] = 1;
                             }
                         }
 
@@ -217,10 +221,15 @@ module.exports = function (RED) {
         sendMember(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
             var node = this;
 
-            if (this.valueChangedCallback) {
-                this.valueChangedCallback(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
-            } else {
-                node.warn("No callback");
+            for(var i = 0; i < this.valueChangedCallbacks.length; i++) {
+                if (this.valueChangedCallbacks[i]) {
+                    this.valueChangedCallbacks[i](status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
+                } else {
+                    node.warn("No callback in item " + i);
+                }
+            }
+            if(this.valueChangedCallbacks.length === 0) {
+                node.warn("No callbacks");
             }
         }
     }
