@@ -2,6 +2,7 @@ const life360 = require('../index.js');
 
 var session;
 var updated_locations = {};
+var updated_location_names = {};
 var numCheck = 0;
 
 function isSet(value) {
@@ -54,31 +55,101 @@ module.exports = function (RED) {
             let circleId = circle.id;
 
             if (isSet(members)) {
+                let prevLocations = {};
+                let prevLocationNames = {};
+                let locPopBefore = {};
+                let movedMembers = {};
+                let changed = false;
                 for (var i = 0; i < members.length; i++) {
                     let member = members[i];
-                    //let locationName = circleName + ": " + member.location.name;
                     let locationName = member.location.name;
+                    let locationId = member.location.sourceId; 
+                    let oldLocationId = null;
                     let oldLocationName = null;
                     if (updated_locations[circleId] && updated_locations[circleId][member.id]) {
-                        oldLocationName = updated_locations[circleId][member.id]; 
+                        oldLocationId = updated_locations[circleId][member.id];
+                        oldLocationName = updated_location_names[circleId][member.id]; 
+                        if(isSet(oldLocationId)) {
+                            if(locPopBefore[oldLocationId]) {
+                                locPopBefore[oldLocationId]++;
+                            } else {
+                                locPopBefore[oldLocationId] = 0;
+                            }
+                        }
                     }
 
-                    //node.warn(member.firstName + " at: " + locationName + " JSON: " + JSON.stringify(member));
-                    if ((oldLocationName && !locationName) || (!oldLocationName && locationName) || (locationName && oldLocationName && oldLocationName !== locationName)) {
-                        node.warn("Num Check: " + numCheck + " CHANGE   : " + member.firstName + " in circle " + circleName + " has New location: " + locationName + " differs from old location: " + oldLocationName);
-                        node.sendMember(member, numCheck);
-                    } else {
-                        //node.warn("NO CHANGE: " + member.firstName + "." + circleName + ": " + locationName + " from: " + oldLocationName);
-                        node.sendMember(null, numCheck);
+                    //console.log(member.firstName + " at: " + locationName + " JSON: " + JSON.stringify(member));
+                    //if ((oldLocationName && !locationName) || (!oldLocationName && locationName) || (locationName && oldLocationName && oldLocationName !== locationName)) {
+                    if ((oldLocationId && !locationId) || (!oldLocationId && locationId) || (locationId && oldLocationId && oldLocationId !== locationId)) {
+                        changed = true;
+                        prevLocations[member.id] = oldLocationId;
+                        prevLocationNames[member.id] = oldLocationName;
+                        movedMembers[member.id] = member;
+                        console.log("Num Check: " + numCheck + " CHANGE   : " + member.firstName + " in circle " + circleName + " has New location: " + locationId + " differs from old location: " + oldLocationId);
+                        //node.sendMember(member, numCheck);
+                    //} else {
+                        //node.warn("NO CHANGE: " + member.firstName + "." + circleName + ": " + locationId + " from: " + oldLocationId);
+                        //node.sendMember(null, numCheck);
                     }
 
                     if ( updated_locations[circleId] ) {
-                        updated_locations[circleId][member.id] = locationName;
+                        updated_locations[circleId][member.id] = locationId;
+                        updated_location_names[circleId][member.id] = locationName;
                     } else {
                         updated_locations[circleId] = {};
-                        updated_locations[circleId][member.id] = locationName;
+                        updated_locations[circleId][member.id] = locationId;
+                        updated_location_names[circleId] = {};
+                        updated_location_names[circleId][member.id] = locationName;
                     }
-                    //node.warn("Saved location: " + updated_locations[circleId][member.id] + " for " + member.firstName + " in circle " + circleName + " should be " + locationName);
+                    //node.warn("Saved location: " + updated_locations[circleId][member.id] + " for " + member.firstName + " in circle " + circleName + " should be " + locationId);
+                }
+
+                if(changed) {
+                    //For all the members of this circle who changed locations
+                    for (const [memberId, movedMember] of Object.entries(movedMembers)) {
+
+                        let prevLocId = prevLocations[memberId];
+                        let curLocId = movedMember.location.sourceId;
+
+                        let status = movedMember.firstName + " " + movedMember.lastName + " ";
+
+                        //Set the population of the previous location before departure
+                        let numPrevLocBefore = 0;
+                        if(isSet(prevLocId)) {
+
+                            status += "left " + prevLocationNames[memberId];
+
+                            if(locPopBefore[prevLocId] && isSet(locPopBefore[prevLocId])) {
+                                numPrevLocBefore = locPopBefore[prevLocId];
+                                //Update for the next loop iteration
+                                //Can prob assume this, but just to be on the safe side...
+                                if(locPopBefore[prevLocId] > 0) {
+                                    locPopBefore[prevLocId]--;
+                                }
+                            }
+                        }
+
+                        //Set the population of the current location before arrival
+                        let numCurLocBefore = 0;
+                        if(isSet(curLocId)) {
+
+                            if(isSet(prevLocId)) {
+                                status += " and ";
+                            }
+                            status += " arrived at " + movedMember.location.name;
+
+                            if(locPopBefore[curLocId] && isSet(locPopBefore[curLocId])) {
+                                numCurLocBefore = locPopBefore[curLocId];
+                                //Update for the next loop iteration
+                                locPopBefore[curLocId]++;
+                            }
+                        }
+
+                        node.sendMember(status, numCheck, movedMember, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
+                    }
+                } else {
+                   let status = "Checking location. (" + numCheck + ")";
+                   node.sendMember(status, null, null, null, null, null, null, null); 
                 }
             }
         }
@@ -143,11 +214,11 @@ module.exports = function (RED) {
             });
         }
 
-        sendMember(member, numCheck) {
+        sendMember(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
             var node = this;
 
             if (this.valueChangedCallback) {
-                this.valueChangedCallback(member, numCheck);
+                this.valueChangedCallback(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
             } else {
                 node.warn("No callback");
             }

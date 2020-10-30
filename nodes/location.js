@@ -1,3 +1,7 @@
+function isSet(value) {
+    return typeof value !== 'undefined' && value != null;
+}
+
 module.exports = function (RED) {
     class LocationNode {
         constructor(config) {
@@ -22,39 +26,85 @@ module.exports = function (RED) {
                 });
             }
 
-            node.server.onChange(function (member, numCheck) {
-                node.sendMemeber(member, numCheck);
+            node.server.onChange(function (status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
+                node.sendMemeber(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
             });
         }
 
-        sendMemeber(member, numCheck) {
+        sendMemeber(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
             var node = this;
 
             if (!!member) {
                 if(node.config.outputAtStartup || numCheck > 1) {
-                    node.warn("Sending " + member.firstName + ", " + member.location.name);
-                    //outputs
-                    node.send([{
-                        payload: member
-                    }]);
-                }
 
-                let whereName = member.location.name;
-                if (!whereName) {
-                    whereName = "Unnamed Place";
-                }
+                    if(//Any circle and (any event or a specific event about a named location)
+                       (node.config.circle === 'any' &&
+                        (node.config.event === 'either' ||
+                         (node.config.event === 'arrive' && isSet(curLocId)) ||
+                         (node.config.event === 'leave' && isSet(prevLocId)))) ||
 
-                node.status({
-                    fill: "green",
-                    shape: "dot",
-                    text: whereName
-                });
+                       //A specific circle
+                       (node.config.circle === circleId &&
+
+                        (//Any event, any place, and (any or a specific person)
+                         (node.config.event === 'either' && node.config.place === 'any' &&
+                          (node.config.person === 'any' || node.config.person === member.id)) ||
+
+                         (//Any event or arrival event
+                          (node.config.event === 'either' || node.config.event === 'arrive') &&
+                          //Arrival occurred at (any or a specific place)
+                          isSet(curLocId)  && (node.config.place === 'any' || node.config.place === curLocId)  &&
+                          //of any or a specific person
+                          (node.config.person === 'any' || node.config.person === member.id)) ||
+
+                         (//Any event or departure event
+                          (node.config.event === 'either' || node.config.event === 'leave') &&
+                          //Departure occurred at (any or a specific place)
+                          isSet(prevLocId) && (node.config.place === 'any' || node.config.place === prevLocId) &&
+                          //of any or a specific person
+                          (node.config.person === 'any' || node.config.person === member.id)) ||
+
+                         (//Arrival event occurred at a specific place
+                          node.config.event === 'arrive' && isSet(curLocId)  && node.config.place === curLocId  &&
+                          //of the first person
+                          node.config.person === 'first' && numCurLocBefore === 0) ||
+
+                         (//Departure event occurred at a specific place
+                          node.config.event === 'leave'  && isSet(prevLocId) && node.config.place === prevLocId &&
+                          //of the last person
+                          node.config.person === 'last'  && numPrevLocBefore === 1)))) {
+
+                        console.log("Sending " + member.firstName + ", " + member.location.name);
+                        //outputs
+                        node.send([{
+                            payload: member
+                        }]);
+
+                        node.status({
+                            fill: "green",
+                            shape: "dot",
+                            text: status_msg
+                        });
+                    } else {
+                        node.warn("Unknown event detection condition.  node info: start: " + node.config.outputAtStartup + " circle: " + node.config.circle + " place: " + node.config.place + " person: " + node.config.person + " event: " + node.config.event + " event info: numCheck: " + numCheck + " member: " + member.firstName + " circle: " + circleId + " prev loc: " + prevLocId + " cur loc: " + curLocId + " numPrevLocBefore: " + numPrevLocBefore + " numCurLocBefore: " + numCurLocBefore);
+                        node.status({
+                            fill: "red",
+                            shape: "dot",
+                            text: "Unknown event detection condition."
+                        });
+                    }
+                } else {
+                    node.status({
+                        fill: "yellow",
+                        shape: "dot",
+                        text: "Waiting for first event. (" + numCheck + ")"
+                    });
+                }
             } else {
-                let wtmsg = "Checking location. (" + numCheck + ")";
                 node.status({
                     fill: "yellow",
                     shape: "ring",
-                    text: wtmsg
+                    text: status_msg
                 });
             }
         };
