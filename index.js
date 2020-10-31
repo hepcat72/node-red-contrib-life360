@@ -97,7 +97,6 @@ module.exports.circle = function (session, circleId) {
     request(options)
       .then(response => {
         let circle = response.body;
-//        console.log("Returning circle: " + JSON.stringify(circle));
         resolve(circle);
       });
   });
@@ -121,7 +120,6 @@ module.exports.places = function (session, circleId) {
     request(options)
       .then(response => {
         let places = response.body.places;
-        //console.log("Returning places: " + JSON.stringify(places));
         resolve(places);
       });
   });
@@ -144,7 +142,6 @@ module.exports.members = function (session, circleId) {
     request(options)
       .then(response => {
         let members = response.body.members;
-        //console.log("Returning members: " + JSON.stringify(members));
         resolve(members);
       });
   });

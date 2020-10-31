@@ -51,8 +51,8 @@
                 var prevConfigNode = node.server;
                 var configNodeId = $("#node-input-server").val();
 
-                console.log("Circle Change: Previously selected server: " + prevConfigNode);
-                console.log("Circle Change: Selected server: " + configNodeId);
+                //console.log("Circle Change: Previously selected server: " + prevConfigNode);
+                //console.log("Circle Change: Selected server: " + configNodeId);
 
                 if(typeof configNodeId === 'undefined' || configNodeId == null) {
                     $("#node-input-circle").html("");
@@ -79,12 +79,11 @@
                         circleId = prevSelectedCircle;
                     }
 
-                    console.log("Circle Change: Previously Selected circle: " + prevSelectedCircle);
-                    console.log("Circle Change: Selected circle: " + selectedCircle);
-                    console.log("Circle Change: Setting circle: " + circleId);
+                    //console.log("Circle Change: Previously Selected circle: " + prevSelectedCircle);
+                    //console.log("Circle Change: Selected circle: " + selectedCircle);
+                    //console.log("Circle Change: Setting circle: " + circleId);
 
                     // Show all available circles in the dropdown
-                    //let selectedCircle = $("#node-input-circle").val();
                     $("#node-input-circle").html("");
 
                     $("<option value='any'>Any</option>").appendTo("#node-input-circle");
@@ -97,7 +96,6 @@
 
                     $("#node-input-circle").val(circleId);
                     $('#node-input-place').trigger('change');
-                    //$('#node-input-person').trigger('change');
                 });
             });
 
@@ -109,9 +107,9 @@
                     circleId = prevSelectedCircle;
                 }
 
-                console.log("Place Change: Previously selected circle: " + prevSelectedCircle);
-                console.log("Place Change: Selected circle: " + selectedCircle);
-                console.log("Place Change: Setting circle: " + circleId);
+                //console.log("Place Change: Previously selected circle: " + prevSelectedCircle);
+                //console.log("Place Change: Selected circle: " + selectedCircle);
+                //console.log("Place Change: Setting circle: " + circleId);
 
                 ////
                 //// Update the places
@@ -126,11 +124,14 @@
                     placeId = prevSelectedPlace;
                 }
                 //If there's no selected place or if there was a new circle selection
-                if(typeof placeId === 'undefined' || placeId == null || ((typeof placeId === 'undefined' || placeId == null) && circleId === selectedCircle)) {
+                if(typeof placeId === 'undefined' || placeId == null ||
+                   ((typeof placeId === 'undefined' || placeId == null) &&
+                    circleId === selectedCircle)) {
                     placeId = 'any';
                 }
 
-                if(typeof selectedPlace !== 'undefined' && selectedPlace != null && selectedCircle === prevSelectedCircle && selectedPlace === prevSelectedPlace) {
+                if(typeof selectedPlace !== 'undefined' && selectedPlace != null &&
+                   selectedCircle === prevSelectedCircle && selectedPlace === prevSelectedPlace) {
                     if(circleId === 'any') {
                         $("#node-input-place").html("");
                         $("<option value='any'>Any</option>").appendTo("#node-input-place");
@@ -138,20 +139,16 @@
                         $('#node-input-person').trigger('change');
                         return(null);
                     }
-                    //$('#node-input-person').trigger('change');
-                    //return(null);
                 } else if(typeof selectedCircle !== 'undefined' && selectedCircle != null &&
                           ((selectedCircle !== prevSelectedCircle &&
-                            (selectedPlace === 'undefined' || selectedPlace == null || selectedPlace === prevSelectedPlace)) )) { // ||
-                           //(selectedCircle === prevSelectedCircle &&
-                           // (typeof selectedPlace !== 'undefined' && selectedPlace != null) &&
-                           // (selectedPlace !== prevSelectedPlace)))) {
+                            (selectedPlace === 'undefined' || selectedPlace == null ||
+                             selectedPlace === prevSelectedPlace)) )) {
                     placeId = 'any';
                 }
 
-                console.log("Place Change: Previously selected place: " + prevSelectedPlace);
-                console.log("Place Change: Selected place: " + $('#node-input-place').val());
-                console.log("Place Change: Setting place: " + placeId);
+                //console.log("Place Change: Previously selected place: " + prevSelectedPlace);
+                //console.log("Place Change: Selected place: " + $('#node-input-place').val());
+                //console.log("Place Change: Setting place: " + placeId);
 
                 if(circleId === 'any') {
                     $("#node-input-place").html("");
@@ -164,8 +161,6 @@
                 // Load the available categories from the server
                 $.getJSON('location/places/' + node.id + '/' + configNodeId + '/' + circleId + '/' + placeId, function(data) {
 
-                    console.log("Building place select list");
-
                     $("#node-input-place").html("");
 
                     $("<option value='any'>Any</option>").appendTo("#node-input-place");
@@ -174,7 +169,7 @@
                     // Show all available people in the dropdown
                     for (const [placeId, placeName] of Object.entries(data)) {
 
-                        console.log("Circle Change: Option: " + placeId + " " + placeName);
+                        //console.log("Circle Change: Option: " + placeId + " " + placeName);
 
                         if(placeId !== "selected") {
                             $("<option value='" + placeId + "'> " + placeName + "</option>").appendTo("#node-input-place");
@@ -183,10 +178,9 @@
                         }
                     }
 
-                    console.log("Place Change: committing place: " + selectedPlace);
+                    //console.log("Place Change: committing place: " + selectedPlace);
 
                     $('#node-input-place').val(selectedPlace);
-                    //$('#node-input-place').trigger('change');
                     $('#node-input-person').trigger('change');
                 });
             });
@@ -199,9 +193,9 @@
                     circleId = prevSelectedCircle;
                 }
 
-                console.log("Person Change: Previously selected circle: " + prevSelectedCircle);
-                console.log("Person Change: Selected circle: " + selectedCircle);
-                console.log("Person Change: Setting circle: " + circleId);
+                //console.log("Person Change: Previously selected circle: " + prevSelectedCircle);
+                //console.log("Person Change: Selected circle: " + selectedCircle);
+                //console.log("Person Change: Setting circle: " + circleId);
 
                 if(circleId === 'any') {
                     $("#node-input-person").html("");
@@ -231,8 +225,8 @@
                     personId = 'any';
                 }
 
-                console.log("Person Change: Previously selected person: " + prevSelectedPerson);
-                console.log("Person Change: Selected person: " + $('#node-input-person').val());
+                //console.log("Person Change: Previously selected person: " + prevSelectedPerson);
+                //console.log("Person Change: Selected person: " + $('#node-input-person').val());
 
                 // Load the available categories from the server
                 $.getJSON('location/people/' + node.id + '/' + configNodeId + '/' + circleId + '/' + personId, function(data) {
@@ -253,14 +247,12 @@
                     }
 
                     if($('#node-input-place').val() === 'any') {
-console.log("Disabling first/last");
                         $('#node-input-person')[0][1].disabled = true;
                         $('#node-input-person')[0][2].disabled = true;
                         if(selectedPerson === 'first' || selectedPerson === 'last') {
                             selectedPerson = 'any';
                         }
                     } else {
-console.log("Enabling first/last");
                         $('#node-input-person')[0][1].disabled = false;
                         $('#node-input-person')[0][2].disabled = false;
                     }
@@ -323,7 +315,6 @@ console.log("Enabling first/last");
                             }
                         }
                     } else if(circleId === 'any') {
-                        //$("#node-input-event").val('either');
                         for (var x = 0; x < $("#node-input-event")[0].childElementCount; x++) {
                             $('#node-input-event')[0][x].disabled = false;
                         }

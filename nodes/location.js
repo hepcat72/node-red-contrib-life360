@@ -12,7 +12,7 @@ module.exports = function (RED) {
 
             node.status({
 
-            }); //clean
+            });
 
             //get server node
             node.server = RED.nodes.getNode(node.config.server);
@@ -28,7 +28,6 @@ module.exports = function (RED) {
 
             node.on('close', function() {
                 if (node.server) {
-                    console.log("Location node " + node.id + " closed");
                     node.server.onLocationDisable(node.id);
                 }
             });
@@ -81,7 +80,6 @@ module.exports = function (RED) {
                           //of the last person
                           node.config.person === 'last'  && numPrevLocBefore === 1)))) {
 
-                        console.log("Sending " + member.firstName + ", " + member.location.name);
                         //outputs
                         node.send([{
                             payload: member
@@ -92,10 +90,6 @@ module.exports = function (RED) {
                             shape: "dot",
                             text: status_msg
                         });
-
-                        console.log("Triggered event detection condition.  node info: start: " + node.config.outputAtStartup + " circle: " + node.config.circle + " place: " + node.config.place + " person: " + node.config.person + " event: " + node.config.event + " event info: numCheck: " + numCheck + " member: " + member.firstName + " circle: " + circleId + " prev loc: " + prevLocId + " cur loc: " + curLocId + " numPrevLocBefore: " + numPrevLocBefore + " numCurLocBefore: " + numCurLocBefore);
-                    } else {
-                        console.log("Skipped event detection condition.  node info: start: " + node.config.outputAtStartup + " circle: " + node.config.circle + " place: " + node.config.place + " person: " + node.config.person + " event: " + node.config.event + " event info: numCheck: " + numCheck + " member: " + member.firstName + " circle: " + circleId + " prev loc: " + prevLocId + " cur loc: " + curLocId + " numPrevLocBefore: " + numPrevLocBefore + " numCurLocBefore: " + numCurLocBefore);
                     }
                 } else {
                     node.status({
@@ -115,7 +109,6 @@ module.exports = function (RED) {
     }
 
     // Make all the available circle info accessible for the node's config screen
-    //Note: req refers to the /-delimited values in the first argument (as I understand it) and res turns out to be the parameter supplied to the function that's sent.  That function ends up being "called" somehow and res is supplied as the argument (sort of - that argument is set by doing something like res.json(circles_select) )
     RED.httpAdmin.get('/location/:cmd/:id/:config_node_id/:circle_id/:selected_id', RED.auth.needsPermission('location.read'), function(req, res){
         var node = RED.nodes.getNode(req.params.id);
         var server = RED.nodes.getNode(req.params.config_node_id);
@@ -123,7 +116,6 @@ module.exports = function (RED) {
             server.getCircles().then((circles) => {
                 let circles_select = {};
                 circles_select['selected'] = req.params.selected_id;
-                //console.log("circles = " + JSON.stringify(circles));
                 for (let circle of circles) {
                     circles_select[circle.id] = circle.name;
                 }
@@ -134,7 +126,6 @@ module.exports = function (RED) {
             server.getPeople(req.params.circle_id, function(people) {
                 let person_select = {};
                 person_select['selected'] = req.params.selected_id;
-                //console.log("people = " + JSON.stringify(people));
                 for (let person of people) {
                     person_select[person.id] = person.firstName + ' ' + person.lastName;
                 }
@@ -145,7 +136,6 @@ module.exports = function (RED) {
             server.getPlaces(req.params.circle_id, function(places) {
                 let place_select = {};
                 place_select['selected'] = req.params.selected_id;
-                //console.log("places = " + JSON.stringify(places));
                 for (let place of places) {
                     place_select[place.id] = place.name;
                 }
