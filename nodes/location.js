@@ -26,7 +26,14 @@ module.exports = function (RED) {
                 });
             }
 
-            node.server.onChange(function (status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
+            node.on('close', function() {
+                if (node.server) {
+                    console.log("Location node " + node.id + " closed");
+                    node.server.onLocationDisable(node.id);
+                }
+            });
+
+            node.server.onChange(node.id, function (status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
                 node.sendMemeber(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
             });
         }

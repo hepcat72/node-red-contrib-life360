@@ -22,11 +22,23 @@ module.exports = function (RED) {
             node.username = n.username;
             node.password = n.password;
 
-            node.valueChangedCallbacks = [];
+            //node.valueChangedCallbacks = [];
+            node.valueChangedCallbacks = {};
+            node.callbacksEnabled = {};
 
-            this.onChange = function (callback) {
-                this.valueChangedCallbacks.push(callback);
+            this.onChange = function (nodeId, callback) {
+                this.valueChangedCallbacks[nodeId] = callback;
+                this.callbacksEnabled[nodeId] = true;
             };
+
+            this.onLocationDisable = function(nodeId) {
+                if(this.callbacksEnabled[nodeId]) {
+                    console.log("Disabling a location node's callbacks");
+                    //The location node has either been deleted or disabled, so don't call it back.
+                    //If it was deleted, it should go fully away the next time node red restarts.
+                    this.callbacksEnabled[nodeId] = false;
+                }
+            }
 
             if (node.username && node.password) {
                 node.updateLife360();
@@ -221,14 +233,16 @@ console.log("Added 1 to location due to " + movedMember.firstName + "'s arrival"
         sendMember(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
             var node = this;
 
-            for(var i = 0; i < this.valueChangedCallbacks.length; i++) {
-                if (this.valueChangedCallbacks[i]) {
-                    this.valueChangedCallbacks[i](status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
-                } else {
-                    node.warn("No callback in item " + i);
+            //for(var i = 0; i < this.valueChangedCallbacks.length; i++) {
+            let cbexists = false;
+            for(const [locationNodeId, callback] of Object.entries(node.valueChangedCallbacks)) {
+                if(node.callbacksEnabled[locationNodeId]) {
+                    callback(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
+                    cbexists = true;
                 }
             }
-            if(this.valueChangedCallbacks.length === 0) {
+            //if(this.valueChangedCallbacks.length === 0) {
+            if(!cbexists) {
                 node.warn("No callbacks");
             }
         }
