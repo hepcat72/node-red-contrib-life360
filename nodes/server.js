@@ -80,7 +80,7 @@ module.exports = function (RED) {
                         oldLocationId = updated_locations[circleId][member.id];
                         oldLocationName = updated_location_names[circleId][member.id]; 
                         if(isSet(oldLocationId)) {
-                            if(locPopBefore[oldLocationId]) {
+                            if(isSet(locPopBefore[oldLocationId])) {
                                 locPopBefore[oldLocationId]++;
                             } else {
                                 locPopBefore[oldLocationId] = 0;
