@@ -65,6 +65,12 @@ module.exports = function (RED) {
             let circleId = circle.id;
 
             if (isSet(members)) {
+
+                //
+                // Update saved locations, detect changes, and count location
+                // populations before these changes occurred
+                //
+
                 let prevLocations = {};
                 let prevLocationNames = {};
                 let locPopBefore = {};
@@ -83,7 +89,7 @@ module.exports = function (RED) {
                             if(isSet(locPopBefore[oldLocationId])) {
                                 locPopBefore[oldLocationId]++;
                             } else {
-                                locPopBefore[oldLocationId] = 0;
+                                locPopBefore[oldLocationId] = 1;
                             }
                         }
                     }
