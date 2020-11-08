@@ -127,6 +127,7 @@
                 if(typeof placeId === 'undefined' || placeId == null ||
                    ((typeof placeId === 'undefined' || placeId == null) &&
                     circleId === selectedCircle)) {
+
                     placeId = 'any';
                 }
 
@@ -143,6 +144,7 @@
                           ((selectedCircle !== prevSelectedCircle &&
                             (selectedPlace === 'undefined' || selectedPlace == null ||
                              selectedPlace === prevSelectedPlace)) )) {
+
                     placeId = 'any';
                 }
 
@@ -160,6 +162,8 @@
 
                 // Load the available categories from the server
                 $.getJSON('location/places/' + node.id + '/' + configNodeId + '/' + circleId + '/' + placeId, function(data) {
+
+                    //console.log("Building place select list");
 
                     $("#node-input-place").html("");
 

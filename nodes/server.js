@@ -32,8 +32,9 @@ module.exports = function (RED) {
 
             this.onLocationDisable = function(nodeId) {
                 if(this.callbacksEnabled[nodeId]) {
-                    //The location node has either been deleted or disabled, so don't call it back.
-                    //If it was deleted, it should go fully away the next time node red restarts.
+                    //The location node has either been deleted or disabled, so
+                    //don't call it back.  If it was deleted, it should go fully
+                    //away the next time node red restarts.
                     this.callbacksEnabled[nodeId] = false;
                 }
             }
@@ -64,27 +65,64 @@ module.exports = function (RED) {
             let members = circle.members;
             let circleId = circle.id;
 
+            //
+            // Update saved locations, detect changes, and count location
+            // populations before these changes occurred
+            //
+
+            //It's easy to debug arrival events by checking outputAtStartup, but
+            //you cannot test leave node triggers, so the following allows
+            //testing of leave events on the first check when node red is
+            //restarted by setting a starting location (based on the first
+            //person's actual location).  Trigger on startup in location node(s)
+            //must be true to test.
+            let debugLeave = false;
+            let debugLocationId = null;
+            let debugLocationName = null;
+            let debugStartPop = 2; //Set previous population of that location as
+                                   //2. This assumes 4 people in a circle with 2
+                                   //people in one home and 2 in another. Must
+                                   //create a location node that is set to
+                                   //trigger with last to leave from both
+                                   //locations and restart node red to trigger
+                                   //the debug test.
+
             if (isSet(members)) {
-
-                //
-                // Update saved locations, detect changes, and count location
-                // populations before these changes occurred
-                //
-
                 let prevLocations = {};
                 let prevLocationNames = {};
                 let locPopBefore = {};
                 let movedMembers = {};
                 let changed = false;
+
+                if(debugLeave && numCheck === 1) {
+                    for (var i = 0; i < members.length; i++) {
+                        let member = members[i];
+                        if(!isSet(debugLocationId) &&
+                           isSet(member.location.sourceId)) {
+                            debugLocationId = member.location.sourceId;
+                            debugLocationName = member.location.name;
+                            console.log("Setting debug location: " +
+                                        debugLocationName + " " +
+                                        debugLocationId);
+                            console.log("Prev pop " + debugLocationName + " " +
+                                        locPopBefore[debugLocationId]);
+                        }
+                    }
+                }
+
                 for (var i = 0; i < members.length; i++) {
                     let member = members[i];
                     let locationName = member.location.name;
                     let locationId = member.location.sourceId; 
                     let oldLocationId = null;
                     let oldLocationName = null;
-                    if (updated_locations[circleId] && updated_locations[circleId][member.id]) {
+                    if (updated_locations[circleId] &&
+                        updated_locations[circleId][member.id]) {
+
                         oldLocationId = updated_locations[circleId][member.id];
-                        oldLocationName = updated_location_names[circleId][member.id]; 
+                        oldLocationName =
+                            updated_location_names[circleId][member.id];
+
                         if(isSet(oldLocationId)) {
                             if(isSet(locPopBefore[oldLocationId])) {
                                 locPopBefore[oldLocationId]++;
@@ -92,10 +130,17 @@ module.exports = function (RED) {
                                 locPopBefore[oldLocationId] = 1;
                             }
                         }
+                    } else if(debugLeave && numCheck === 1) {
+                        oldLocationId = debugLocationId;
+                        oldLocationName = debugLocationName;
+                        locPopBefore[debugLocationId] = debugStartPop;
                     }
 
-                    if ((oldLocationId && !locationId) || (!oldLocationId && locationId) ||
-                        (locationId && oldLocationId && oldLocationId !== locationId)) {
+                    if ((oldLocationId && !locationId) ||
+                        (!oldLocationId && locationId) ||
+                        (locationId && oldLocationId &&
+                         oldLocationId !== locationId)) {
+
                         changed = true;
                         prevLocations[member.id] = oldLocationId;
                         prevLocationNames[member.id] = oldLocationName;
@@ -104,25 +149,29 @@ module.exports = function (RED) {
 
                     if ( updated_locations[circleId] ) {
                         updated_locations[circleId][member.id] = locationId;
-                        updated_location_names[circleId][member.id] = locationName;
+                        updated_location_names[circleId][member.id] =
+                            locationName;
                     } else {
                         updated_locations[circleId] = {};
                         updated_locations[circleId][member.id] = locationId;
                         updated_location_names[circleId] = {};
-                        updated_location_names[circleId][member.id] = locationName;
+                        updated_location_names[circleId][member.id] =
+                            locationName;
                     }
                 }
 
                 if(changed) {
                     //For all the members of this circle who changed locations
-                    for (const [memberId, movedMember] of Object.entries(movedMembers)) {
+                    for (const [memberId, movedMember] of
+                         Object.entries(movedMembers)) {
 
                         let prevLocId = prevLocations[memberId];
                         let curLocId = movedMember.location.sourceId;
 
-                        let status = movedMember.firstName + " " + movedMember.lastName + " ";
+                        let status = movedMember.firstName + " " +
+                            movedMember.lastName + " ";
 
-                        //Set the population of the previous location before departure
+                        //Set the population of the prev loc before departure
                         let numPrevLocBefore = 0;
                         if(isSet(prevLocId)) {
 
@@ -131,36 +180,53 @@ module.exports = function (RED) {
                             if(isSet(locPopBefore[prevLocId])) {
                                 numPrevLocBefore = locPopBefore[prevLocId];
                                 //Update for the next loop iteration
-                                //Can prob assume this, but just to be on the safe side...
+                                //Can prob assume this but to be on safe side...
                                 if(locPopBefore[prevLocId] > 0) {
                                     locPopBefore[prevLocId]--;
                                 }
                             }
                         }
 
-                        //Set the population of the current location before arrival
+                        //Set the population of the current loc before arrival
                         let numCurLocBefore = 0;
                         if(isSet(curLocId)) {
 
                             if(isSet(prevLocId)) {
                                 status += " and ";
                             }
-                            status += " arrived at " + movedMember.location.name;
+                            status += " arrived at " +
+                                movedMember.location.name;
                             if(isSet(locPopBefore[curLocId])) {
                                 numCurLocBefore = locPopBefore[curLocId];
-                                //Update for the next loop iteration
-                                locPopBefore[curLocId]++;
-                            } else {
-                                //This happens when the location is not in updated_locations yet
+                                //This should eval as true if in debug mode and
+                                //this is not the first check, only false when
+                                //debug is true and this is the first time
+                                //running after node red restart
+                                if(!debugLeave || (numCheck === 1 &&
+                                                   !isSet(debugLocationId))) {
+                                    //Update for the next loop iteration
+                                    locPopBefore[curLocId]++;
+                                } else if(debugLeave && isSet(curLocId) &&
+                                          numCheck === 1 &&
+                                          curLocId !== debugLocationId) {
+
+                                    //Assume person was at the prev location
+                                    locPopBefore[curLocId]++;
+                                }
+                            } else if(!debugLeave) {
+                                //This happens when the location is not in
+                                //updated_locations yet
                                 locPopBefore[curLocId] = 1;
                             }
                         }
 
-                        node.sendMember(status, numCheck, movedMember, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
+                        node.sendMember(status, numCheck, movedMember, circleId,
+                                        prevLocId, curLocId, numPrevLocBefore,
+                                        numCurLocBefore);
                     }
                 } else {
                    let status = "Checking location. (" + numCheck + ")";
-                   node.sendMember(status, null, null, null, null, null, null, null); 
+                   node.sendMember(status, null,null,null,null,null,null,null); 
                 }
             }
         }
@@ -222,13 +288,17 @@ module.exports = function (RED) {
             });
         }
 
-        sendMember(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
+        sendMember(status_msg, numCheck, member, circleId, prevLocId, curLocId,
+                   numPrevLocBefore, numCurLocBefore) {
             var node = this;
 
             let cbexists = false;
-            for(const [locationNodeId, callback] of Object.entries(node.valueChangedCallbacks)) {
+            for(const [locationNodeId, callback] of
+                Object.entries(node.valueChangedCallbacks)) {
+
                 if(node.callbacksEnabled[locationNodeId]) {
-                    callback(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
+                    callback(status_msg, numCheck, member, circleId, prevLocId,
+                             curLocId, numPrevLocBefore, numCurLocBefore);
                     cbexists = true;
                 }
             }

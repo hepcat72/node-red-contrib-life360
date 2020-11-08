@@ -12,7 +12,7 @@ module.exports = function (RED) {
 
             node.status({
 
-            });
+            }); //clean
 
             //get server node
             node.server = RED.nodes.getNode(node.config.server);
@@ -28,57 +28,81 @@ module.exports = function (RED) {
 
             node.on('close', function() {
                 if (node.server) {
+                    //console.log("Location node " + node.id + " closed");
                     node.server.onLocationDisable(node.id);
                 }
             });
 
-            node.server.onChange(node.id, function (status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
-                node.sendMemeber(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore);
+            node.server.onChange(node.id, function (status_msg, numCheck,
+                                 member, circleId, prevLocId, curLocId,
+                                 numPrevLocBefore, numCurLocBefore) {
+
+                node.sendMemeber(status_msg, numCheck, member, circleId,
+                                 prevLocId, curLocId, numPrevLocBefore,
+                                 numCurLocBefore);
             });
         }
 
-        sendMemeber(status_msg, numCheck, member, circleId, prevLocId, curLocId, numPrevLocBefore, numCurLocBefore) {
+        sendMemeber(status_msg, numCheck, member, circleId, prevLocId,
+                    curLocId, numPrevLocBefore, numCurLocBefore) {
+
             var node = this;
 
             if (!!member) {
                 if(node.config.outputAtStartup || numCheck > 1) {
 
-                    if(//Any circle and (any event or a specific event about a named location)
+                    var stamp = new Date(member.location.timestamp * 1000);
+
+                    if(//Any circle and (any event or a specific event about a
+                       //named location)
                        (node.config.circle === 'any' &&
                         (node.config.event === 'either' ||
                          (node.config.event === 'arrive' && isSet(curLocId)) ||
-                         (node.config.event === 'leave' && isSet(prevLocId)))) ||
+                         (node.config.event === 'leave' &&
+                          isSet(prevLocId)))) ||
 
                        //A specific circle
                        (node.config.circle === circleId &&
 
                         (//Any event, any place, and (any or a specific person)
-                         (node.config.event === 'either' && node.config.place === 'any' &&
-                          (node.config.person === 'any' || node.config.person === member.id)) ||
+                         (node.config.event === 'either' &&
+                          node.config.place === 'any' &&
+                          (node.config.person === 'any' ||
+                           node.config.person === member.id)) ||
 
                          (//Any event or arrival event
-                          (node.config.event === 'either' || node.config.event === 'arrive') &&
+                          (node.config.event === 'either' ||
+                           node.config.event === 'arrive') &&
                           //Arrival occurred at (any or a specific place)
-                          isSet(curLocId)  && (node.config.place === 'any' || node.config.place === curLocId)  &&
+                          isSet(curLocId) && (node.config.place === 'any' ||
+                                              node.config.place === curLocId) &&
                           //of any or a specific person
-                          (node.config.person === 'any' || node.config.person === member.id)) ||
+                          (node.config.person === 'any' ||
+                           node.config.person === member.id)) ||
 
                          (//Any event or departure event
-                          (node.config.event === 'either' || node.config.event === 'leave') &&
+                          (node.config.event === 'either' ||
+                           node.config.event === 'leave') &&
                           //Departure occurred at (any or a specific place)
-                          isSet(prevLocId) && (node.config.place === 'any' || node.config.place === prevLocId) &&
+                          isSet(prevLocId) && (node.config.place === 'any' ||
+                          node.config.place === prevLocId) &&
                           //of any or a specific person
-                          (node.config.person === 'any' || node.config.person === member.id)) ||
+                          (node.config.person === 'any' ||
+                           node.config.person === member.id)) ||
 
                          (//Arrival event occurred at a specific place
-                          node.config.event === 'arrive' && isSet(curLocId)  && node.config.place === curLocId  &&
+                          node.config.event === 'arrive' && isSet(curLocId) &&
+                          node.config.place === curLocId &&
                           //of the first person
-                          node.config.person === 'first' && numCurLocBefore === 0) ||
+                          node.config.person === 'first' &&
+                          numCurLocBefore === 0) ||
 
                          (//Departure event occurred at a specific place
-                          node.config.event === 'leave'  && isSet(prevLocId) && node.config.place === prevLocId &&
+                          node.config.event === 'leave' && isSet(prevLocId) &&
+                          node.config.place === prevLocId &&
                           //of the last person
-                          node.config.person === 'last'  && numPrevLocBefore === 1)))) {
+                          node.config.person === 'last' &&
+                          numPrevLocBefore === 1)))) {
 
                         //outputs
                         node.send([{
@@ -90,7 +114,12 @@ module.exports = function (RED) {
                             shape: "dot",
                             text: status_msg
                         });
+
+                        //console.log("Triggered: " + stamp + ", " + member.firstName + " = " + node.config.person + " " + node.config.event + " place: " + node.config.place + ": " + prevLocId + " -> " + member.location.name + ", numPrevLocBefore: " + numPrevLocBefore + ", numCurLocBefore: " + numCurLocBefore);
+                    //} else {
+                        //console.log("Skipped: " + stamp + ", " + member.firstName + " = " + node.config.person + " " + node.config.event + " place: " + node.config.place + ": " + prevLocId + " -> " + member.location.name + ", numPrevLocBefore: " + numPrevLocBefore + ", numCurLocBefore: " + numCurLocBefore);
                     }
+                    //console.log("nodeinfo: node: " + node.id + " start: " + node.config.outputAtStartup + " numCheck: " + numCheck + " circle: " + node.config.circle + " vs " + circleId);
                 } else {
                     node.status({
                         fill: "yellow",
@@ -127,7 +156,8 @@ module.exports = function (RED) {
                 let person_select = {};
                 person_select['selected'] = req.params.selected_id;
                 for (let person of people) {
-                    person_select[person.id] = person.firstName + ' ' + person.lastName;
+                    person_select[person.id] = person.firstName + ' ' +
+                        person.lastName;
                 }
                 // Return a hash of all available people
                 res.json(person_select);
