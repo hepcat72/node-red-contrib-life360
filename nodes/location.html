@@ -44,7 +44,11 @@
             var configNodeId = $("#node-input-server").val();
 
             $("#node-input-server").change(function() {
-                $('#node-input-circle').trigger('change');
+                configNodeId = $("#node-input-server").val();
+                if(typeof configNodeId !== 'undefined' &&
+                    configNodeId != null && configNodeId !== "_ADD_") {
+                    $('#node-input-circle').trigger('change');
+                }
             });
 
             $("#node-input-circle").change(function() {
@@ -54,7 +58,9 @@
                 //console.log("Circle Change: Previously selected server: " + prevConfigNode);
                 //console.log("Circle Change: Selected server: " + configNodeId);
 
-                if(typeof configNodeId === 'undefined' || configNodeId == null) {
+                if(typeof configNodeId === 'undefined' || configNodeId == null ||
+                   configNodeId === "_ADD_") {
+
                     $("#node-input-circle").html("");
                     $("<option value='any'>Any</option>").appendTo("#node-input-circle");
                     $("#node-input-circle").val('any');

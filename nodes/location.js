@@ -179,6 +179,10 @@ module.exports = function (RED) {
                     res.json(place_select);
                 }).catch((err) => console.log(err));
             }
+        } else {
+            let circles_select = {};
+            circles_select['selected'] = 'any';
+            res.json(circles_select);
         }
     });
 
