@@ -51,7 +51,12 @@ module.exports = function (RED) {
             if (!!member) {
                 if(node.config.outputAtStartup || numCheck > 1) {
 
-                    var stamp = new Date(member.location.timestamp * 1000);
+                    var stamp;
+                    var locName;
+                    if(isSet(member.location)) {
+                        stamp = new Date(member.location.timestamp * 1000);
+                        locName = member.location.name;
+                    }
 
                     if(//Any circle and (any event or a specific event about a
                        //named location)
@@ -115,9 +120,9 @@ module.exports = function (RED) {
                             text: status_msg
                         });
 
-                        //console.log("Triggered: " + stamp + ", " + member.firstName + " = " + node.config.person + " " + node.config.event + " place: " + node.config.place + ": " + prevLocId + " -> " + member.location.name + ", numPrevLocBefore: " + numPrevLocBefore + ", numCurLocBefore: " + numCurLocBefore);
+                        //console.log("Triggered: " + stamp + ", " + member.firstName + " = " + node.config.person + " " + node.config.event + " place: " + node.config.place + ": " + prevLocId + " -> " + locName + ", numPrevLocBefore: " + numPrevLocBefore + ", numCurLocBefore: " + numCurLocBefore);
                     //} else {
-                        //console.log("Skipped: " + stamp + ", " + member.firstName + " = " + node.config.person + " " + node.config.event + " place: " + node.config.place + ": " + prevLocId + " -> " + member.location.name + ", numPrevLocBefore: " + numPrevLocBefore + ", numCurLocBefore: " + numCurLocBefore);
+                        //console.log("Skipped: " + stamp + ", " + member.firstName + " = " + node.config.person + " " + node.config.event + " place: " + node.config.place + ": " + prevLocId + " -> " + locName + ", numPrevLocBefore: " + numPrevLocBefore + ", numCurLocBefore: " + numCurLocBefore);
                     }
                     //console.log("nodeinfo: node: " + node.id + " start: " + node.config.outputAtStartup + " numCheck: " + numCheck + " circle: " + node.config.circle + " vs " + circleId);
                 } else {
@@ -138,42 +143,44 @@ module.exports = function (RED) {
     }
 
     // Make all the available circle info accessible for the node's config screen
-    RED.httpAdmin.get('/location/:cmd/:id/:config_node_id/:circle_id/:selected_id', RED.auth.needsPermission('location.read'), function(req, res){
+    RED.httpAdmin.get('/Life360/:cmd/:id/:config_node_id/:circle_id/:selected_id', RED.auth.needsPermission('Life360.read'), function(req, res){
         var node = RED.nodes.getNode(req.params.id);
         var server = RED.nodes.getNode(req.params.config_node_id);
-        if (req.params.cmd === "circles") {
-            server.getCircles().then((circles) => {
-                let circles_select = {};
-                circles_select['selected'] = req.params.selected_id;
-                for (let circle of circles) {
-                    circles_select[circle.id] = circle.name;
-                }
-                // Return a hash of all available circle IDs/names
-                res.json(circles_select);
-            }).catch((err) => console.log(err));
-        } else if (req.params.cmd === "people") {
-            server.getPeople(req.params.circle_id, function(people) {
-                let person_select = {};
-                person_select['selected'] = req.params.selected_id;
-                for (let person of people) {
-                    person_select[person.id] = person.firstName + ' ' +
-                        person.lastName;
-                }
-                // Return a hash of all available people
-                res.json(person_select);
-            }).catch((err) => console.log(err));
-        } else if (req.params.cmd === "places") {
-            server.getPlaces(req.params.circle_id, function(places) {
-                let place_select = {};
-                place_select['selected'] = req.params.selected_id;
-                for (let place of places) {
-                    place_select[place.id] = place.name;
-                }
-                // Return a hash of all available places
-                res.json(place_select);
-            }).catch((err) => console.log(err));
+        if(isSet(server)) {
+            if (req.params.cmd === "circles") {
+                server.getCircles().then((circles) => {
+                    let circles_select = {};
+                    circles_select['selected'] = req.params.selected_id;
+                    for (let circle of circles) {
+                        circles_select[circle.id] = circle.name;
+                    }
+                    // Return a hash of all available circle IDs/names
+                    res.json(circles_select);
+                }).catch((err) => console.log(err));
+            } else if (req.params.cmd === "people") {
+                server.getPeople(req.params.circle_id, function(people) {
+                    let person_select = {};
+                    person_select['selected'] = req.params.selected_id;
+                    for (let person of people) {
+                        person_select[person.id] = person.firstName + ' ' +
+                            person.lastName;
+                    }
+                    // Return a hash of all available people
+                    res.json(person_select);
+                }).catch((err) => console.log(err));
+            } else if (req.params.cmd === "places") {
+                server.getPlaces(req.params.circle_id, function(places) {
+                    let place_select = {};
+                    place_select['selected'] = req.params.selected_id;
+                    for (let place of places) {
+                        place_select[place.id] = place.name;
+                    }
+                    // Return a hash of all available places
+                    res.json(place_select);
+                }).catch((err) => console.log(err));
+            }
         }
     });
 
-    RED.nodes.registerType("location", LocationNode, {});
+    RED.nodes.registerType("Life360", LocationNode, {});
 };

@@ -1,5 +1,5 @@
 <script type="text/javascript">
-    RED.nodes.registerType('location', {
+    RED.nodes.registerType('Life360', {
         category: 'Life360',
         color: '#7874EB',
         icon: "360.png",
@@ -8,7 +8,7 @@
                 value: ""
             },
             server: {
-                type: "life360-server",
+                type: "Life360-Server",
                 required: true
             },
             outputAtStartup: {
@@ -34,10 +34,10 @@
         },
         inputs: 0,
         outputs: 1,
-        paletteLabel: 'relocate',
+        paletteLabel: 'Life360',
         outputLabels: ["member"],
         label: function () {
-            return this.name || "Location";
+            return this.name || "Life360";
         },
         oneditprepare: function() { 
             var node = this;
@@ -70,7 +70,7 @@
                     circleId = prevSelectedCircle;
                 }
 
-                $.getJSON('location/circles/' + node.id + '/' + configNodeId + '/none/none', function(data) {
+                $.getJSON('Life360/circles/' + node.id + '/' + configNodeId + '/none/none', function(data) {
                     // The response is a json hash, containing all the available circles
                     var prevSelectedCircle = node.circle;
                     var selectedCircle = $("#node-input-circle").val();
@@ -161,7 +161,7 @@
                 }
 
                 // Load the available categories from the server
-                $.getJSON('location/places/' + node.id + '/' + configNodeId + '/' + circleId + '/' + placeId, function(data) {
+                $.getJSON('Life360/places/' + node.id + '/' + configNodeId + '/' + circleId + '/' + placeId, function(data) {
 
                     //console.log("Building place select list");
 
@@ -233,7 +233,7 @@
                 //console.log("Person Change: Selected person: " + $('#node-input-person').val());
 
                 // Load the available categories from the server
-                $.getJSON('location/people/' + node.id + '/' + configNodeId + '/' + circleId + '/' + personId, function(data) {
+                $.getJSON('Life360/people/' + node.id + '/' + configNodeId + '/' + circleId + '/' + personId, function(data) {
                     $("#node-input-person").html("");
 
                     $("<option value='any'>Any</option>").appendTo("#node-input-person");
@@ -337,7 +337,7 @@
     });
 </script>
 
-<script type="text/x-red" data-template-name="location">
+<script type="text/x-red" data-template-name="Life360">
     <link rel="stylesheet" href="life360/static/css/bootstrap-multiselect.css" type="text/css" />
     
     <div class="form-row">

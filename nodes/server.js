@@ -308,5 +308,5 @@ module.exports = function (RED) {
         }
     }
 
-    RED.nodes.registerType("life360-server", ServerNode);
+    RED.nodes.registerType("Life360-Server", ServerNode);
 };
