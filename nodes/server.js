@@ -41,9 +41,14 @@ module.exports = function (RED) {
 
             if (node.username && node.password) {
                 node.updateLife360();
-                setInterval(function () {
+                let timer = setInterval(function () {
                     node.updateLife360();
                 }, 15000);
+
+                node.on('close', function(removed, done) {
+                    clearInterval(timer);
+                    done();
+                });
             }
         }
 
