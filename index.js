@@ -39,6 +39,9 @@ module.exports.authenticate = function (username, password, phone, countryCode) 
     // console.log(`Logging in as user: ${username}, password: ${password}`);
     request(options)
       .then(response => {
+        if (response.statusCode != 200) {
+          reject(new Error(`Life360 server error logging in: ${response.statusCode}`));
+        }
         response = response.body;
         if (!response['access_token']) throw new Error("Unauthorized");
         const session = {
@@ -71,6 +74,9 @@ module.exports.circles = function (session) {
     // console.log(`Fetching circles at ${LIFE360_CIRCLES_URL}`);
     request(options)
       .then(response => {
+        if (response.statusCode != 200) {
+          reject(new Error(`Life360 server error getting circles: ${response.statusCode}`));
+        }
         let circles = response.body.circles;
         //console.log("Returning circles: " + JSON.stringify(circles));
         resolve(circles);
@@ -96,6 +102,9 @@ module.exports.circle = function (session, circleId) {
     // console.log(`Fetching circle at ${LIFE360_CIRCLE_URL}`);
     request(options)
       .then(response => {
+        if (response.statusCode != 200) {
+          reject(new Error(`Life360 server error getting circle: ${response.statusCode}`));
+        }
         let circle = response.body;
         resolve(circle);
       });
@@ -119,6 +128,9 @@ module.exports.places = function (session, circleId) {
     // console.log(`Fetching places at ${LIFE360_PLACES_URL}`);
     request(options)
       .then(response => {
+        if (response.statusCode != 200) {
+          reject(new Error(`Life360 server error getting places: ${response.statusCode}`));
+        }
         let places = response.body.places;
         resolve(places);
       });
@@ -141,6 +153,9 @@ module.exports.members = function (session, circleId) {
     };
     request(options)
       .then(response => {
+        if (response.statusCode != 200) {
+          reject(new Error(`Life360 server error getting members: ${response.statusCode}`));
+        }
         let members = response.body.members;
         resolve(members);
       });
