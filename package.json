@@ -7,6 +7,10 @@
     {
       "name": "Robert Leach",
       "email": "hepcat72@gmail.com"
+    },
+    {
+      "name": "Brian May",
+      "email": "brian@linuxpenguins.xyz"
     }
   ],
   "dependencies": {
@@ -33,5 +37,5 @@
     "type": "git",
     "url": "git://github.com/hepcat72/node-red-contrib-life360.git"
   },
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
