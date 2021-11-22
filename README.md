@@ -20,6 +20,7 @@ It fixes the following bugs:
 - The output-at-startup checkbox (previously only applied to the first person in the first circle and now applies to all/circles & people).
 - Spurious location-change events due to the processing of multiple circles is fixed.  Locations are now tracked by circle.
 - Clear the timer when node is destroyed or recreated. Fixes [#1](https://github.com/hepcat72/node-red-contrib-life360/issues/1), PR [#5](https://github.com/hepcat72/node-red-contrib-life360/pull/5).
+- Correctly handle errors from life360. PR [#6](https://github.com/hepcat72/node-red-contrib-life360/pull/6).
 
 It adds the following filters for location change events:
 
