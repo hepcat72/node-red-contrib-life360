@@ -55,10 +55,12 @@ module.exports = function (RED) {
         updateSession(callback) {
             var node = this;
             if (!session) {
-                life360.authenticate(node.username, node.password).then(s => {
-                    session = s;
-                    callback(session);
-                });
+                life360.authenticate(node.username, node.password)
+                    .then(s => {
+                        session = s;
+                        callback(session);
+                    })
+                    .catch(err => { node.handle_error(err) });
             } else {
                 return callback(session);
             }
@@ -249,9 +251,11 @@ module.exports = function (RED) {
         }
 
         getCircle(circleId, callback) {
-            life360.circle(session, circleId).then(circle => {
-                callback(circle);
-            });
+            life360.circle(session, circleId)
+                .then(circle => {
+                    callback(circle);
+                })
+                .catch(err => { node.log_error(err) });
         }
 
         updateLife360() {
@@ -260,10 +264,11 @@ module.exports = function (RED) {
                 life360.circles(session)
                     .then(circles => {
                         if (circles.length == 0) {
-                            throw new Error("No circles in your Life360.");
+                            node.handle_error(new Error("No circles in your Life360."))
                         }
                         node.updateCircles(circles);
                     })
+                    .catch(err => { node.handle_error(err) });
             });
         }
 
@@ -274,23 +279,34 @@ module.exports = function (RED) {
                     .then(circles => {
                         return circles;
                     })
+                    .catch(err => { node.handle_error(err) });
             });
         }
 
         getPeople(circleId, callback) {
             var node = this;
             
-            return life360.members(session, circleId).then(members => {
-                callback(members);
-            });
+            return life360.members(session, circleId)
+                .then(members => {
+                    callback(members);
+                })
+                .catch(err => { node.handle_error(err) });
         }
 
         getPlaces(circleId, callback) {
             var node = this;
 
-            return life360.places(session, circleId).then(places => {
-                callback(places);
-            });
+            return life360.places(session, circleId)
+                .then(places => {
+                    callback(places);
+                })
+                .catch(err => { node.handle_error(err) });
+        }
+
+        handle_error(err) {
+            let node = this;
+            node.error(err);
+            // node.status({fill:"red",shape:"ring",text:error});
         }
 
         sendMember(status_msg, numCheck, member, circleId, prevLocId, curLocId,
