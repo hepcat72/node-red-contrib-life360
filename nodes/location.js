@@ -17,7 +17,27 @@ module.exports = function (RED) {
             //get server node
             node.server = RED.nodes.getNode(node.config.server);
             if (node.server) {
+                node.server.on('error', (message) => {
+                    node.status({
+                        fill: "red",
+                        shape: "dot",
+                        text: `Error ${message}`
+                    });
+                })
+                node.on('close', function() {
+                    if (node.server) {
+                        node.server.onLocationDisable(node.id);
+                    }
+                });
 
+                node.server.onChange(node.id, function (status_msg, numCheck,
+                                                        member, circleId, prevLocId, curLocId,
+                                                        numPrevLocBefore, numCurLocBefore) {
+
+                    node.sendMemeber(status_msg, numCheck, member, circleId,
+                        prevLocId, curLocId, numPrevLocBefore,
+                        numCurLocBefore);
+                });
             } else {
                 node.status({
                     fill: "red",
@@ -25,22 +45,6 @@ module.exports = function (RED) {
                     text: "Server is required"
                 });
             }
-
-            node.on('close', function() {
-                if (node.server) {
-                    //console.log("Location node " + node.id + " closed");
-                    node.server.onLocationDisable(node.id);
-                }
-            });
-
-            node.server.onChange(node.id, function (status_msg, numCheck,
-                                 member, circleId, prevLocId, curLocId,
-                                 numPrevLocBefore, numCurLocBefore) {
-
-                node.sendMemeber(status_msg, numCheck, member, circleId,
-                                 prevLocId, curLocId, numPrevLocBefore,
-                                 numCurLocBefore);
-            });
         }
 
         sendMemeber(status_msg, numCheck, member, circleId, prevLocId,

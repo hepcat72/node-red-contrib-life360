@@ -58,6 +58,9 @@ module.exports = function (RED) {
                 life360.authenticate(node.username, node.password).then(s => {
                     session = s;
                     callback(session);
+                }).catch(error => {
+                    node.emit('error', error.message);
+                    node.error(error.message);
                 });
             } else {
                 return callback(session);
@@ -251,6 +254,9 @@ module.exports = function (RED) {
         getCircle(circleId, callback) {
             life360.circle(session, circleId).then(circle => {
                 callback(circle);
+            }).catch(error => {
+                node.emit('error', error.message);
+                node.error(error.message);
             });
         }
 
@@ -263,7 +269,10 @@ module.exports = function (RED) {
                             throw new Error("No circles in your Life360.");
                         }
                         node.updateCircles(circles);
-                    })
+                    }).catch(error => {
+                        node.emit('error', error.message);
+                        node.error(error.message);
+                    });
             });
         }
 
