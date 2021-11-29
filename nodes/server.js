@@ -24,7 +24,6 @@ module.exports = function (RED) {
 
             node.valueChangedCallbacks = {};
             node.callbacksEnabled = {};
-
             this.onChange = function (nodeId, callback) {
                 this.valueChangedCallbacks[nodeId] = callback;
                 this.callbacksEnabled[nodeId] = true;
@@ -252,6 +251,7 @@ module.exports = function (RED) {
         }
 
         getCircle(circleId, callback) {
+            var node = this;
             life360.circle(session, circleId).then(circle => {
                 callback(circle);
             }).catch(error => {
