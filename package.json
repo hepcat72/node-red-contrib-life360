@@ -14,9 +14,9 @@
     }
   ],
   "dependencies": {
+    "axios": "^0.24.0",
     "bootstrap-multiselect": "latest",
-    "bluebird": "latest",
-    "request": "latest"
+    "form-data": "^4.0.0"
   },
   "description": "Life360 nodes for node-red",
   "keywords": [
@@ -37,5 +37,5 @@
     "type": "git",
     "url": "git://github.com/hepcat72/node-red-contrib-life360.git"
   },
-  "version": "1.0.1"
+  "version": "1.1.0"
 }
