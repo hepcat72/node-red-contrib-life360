@@ -15,7 +15,7 @@ const handleError = (errorPrefix) => (error) => {
     if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        throw new Error(`${errorPrefix}: ${error.response.status} ${error.response.data?.errorMessage}`)
+        throw new Error(`${errorPrefix}: ${error.response.status} ${error.response.data.errorMessage}`)
     } else if (error.request) {
         // The request was made but no response was received
         // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
@@ -52,10 +52,7 @@ module.exports.authenticate = function (username, password) {
     },  new FormData())
 
     return axios.post(`${LIFE360_API}/oauth2/token.json`, bodyFormData, {
-        headers: {
-            'Authorization': `Authorization: Basic ${LIFE360_CLIENT_SECRET}`,
-            ...bodyFormData.getHeaders()
-        },
+        headers: bodyFormData.getHeaders({'Authorization': `Authorization: Basic ${LIFE360_CLIENT_SECRET}`})
     }).then(response => {
         if (!response.data.access_token) {
             throw new Error("Unauthorized");
@@ -104,7 +101,7 @@ module.exports.places = function (session, circleId) {
  */
 module.exports.members = function (session, circleId) {
     if (!session) return Promise.reject(new Error("session not specified"))
-    return axios.get(`${LIFE360_API}/circles/${circleId}members`, authHeaders(session))
+    return axios.get(`${LIFE360_API}/circles/${circleId}/members`, authHeaders(session))
         .then(({data}) => data.members)
         .catch(handleError('Life360 server error getting members'))
 }
