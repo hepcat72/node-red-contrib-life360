@@ -17,7 +17,27 @@ module.exports = function (RED) {
             //get server node
             node.server = RED.nodes.getNode(node.config.server);
             if (node.server) {
+                node.server.on('error', (message) => {
+                    node.status({
+                        fill: "red",
+                        shape: "dot",
+                        text: `Error ${message}`
+                    });
+                })
+                node.on('close', function() {
+                    if (node.server) {
+                        node.server.onLocationDisable(node.id);
+                    }
+                });
 
+                node.server.onChange(node.id, function (status_msg, numCheck,
+                                                        member, circleId, prevLocId, curLocId,
+                                                        numPrevLocBefore, numCurLocBefore) {
+
+                    node.sendMemeber(status_msg, numCheck, member, circleId,
+                        prevLocId, curLocId, numPrevLocBefore,
+                        numCurLocBefore);
+                });
             } else {
                 node.status({
                     fill: "red",
@@ -25,22 +45,6 @@ module.exports = function (RED) {
                     text: "Server is required"
                 });
             }
-
-            node.on('close', function() {
-                if (node.server) {
-                    //console.log("Location node " + node.id + " closed");
-                    node.server.onLocationDisable(node.id);
-                }
-            });
-
-            node.server.onChange(node.id, function (status_msg, numCheck,
-                                 member, circleId, prevLocId, curLocId,
-                                 numPrevLocBefore, numCurLocBefore) {
-
-                node.sendMemeber(status_msg, numCheck, member, circleId,
-                                 prevLocId, curLocId, numPrevLocBefore,
-                                 numCurLocBefore);
-            });
         }
 
         sendMemeber(status_msg, numCheck, member, circleId, prevLocId,
@@ -144,8 +148,8 @@ module.exports = function (RED) {
 
     // Make all the available circle info accessible for the node's config screen
     RED.httpAdmin.get('/Life360/:cmd/:id/:config_node_id/:circle_id/:selected_id', RED.auth.needsPermission('Life360.read'), function(req, res){
-        var node = RED.nodes.getNode(req.params.id);
-        var server = RED.nodes.getNode(req.params.config_node_id);
+        const node = RED.nodes.getNode(req.params.id);
+        const server = RED.nodes.getNode(req.params.config_node_id);
         if(isSet(server)) {
             if (req.params.cmd === "circles") {
                 server.getCircles().then((circles) => {
@@ -156,9 +160,9 @@ module.exports = function (RED) {
                     }
                     // Return a hash of all available circle IDs/names
                     res.json(circles_select);
-                }).catch((err) => console.log(err));
+                }).catch((err) => node.error(err));
             } else if (req.params.cmd === "people") {
-                server.getPeople(req.params.circle_id, function(people) {
+                server.getPeople(req.params.circle_id).then(people => {
                     let person_select = {};
                     person_select['selected'] = req.params.selected_id;
                     for (let person of people) {
@@ -167,9 +171,9 @@ module.exports = function (RED) {
                     }
                     // Return a hash of all available people
                     res.json(person_select);
-                }).catch((err) => console.log(err));
+                }).catch((err) => node.error(err));
             } else if (req.params.cmd === "places") {
-                server.getPlaces(req.params.circle_id, function(places) {
+                server.getPlaces(req.params.circle_id).then(places => {
                     let place_select = {};
                     place_select['selected'] = req.params.selected_id;
                     for (let place of places) {
@@ -177,7 +181,7 @@ module.exports = function (RED) {
                     }
                     // Return a hash of all available places
                     res.json(place_select);
-                }).catch((err) => console.log(err));
+                }).catch((err) => node.error(err));
             }
         } else {
             let circles_select = {};

@@ -1,10 +1,31 @@
 "use strict";
-const Promise = require("bluebird");
-const request = Promise.promisify(require("request"));
-Promise.promisifyAll(request);
+const axios = require('axios').default;
+const FormData = require('form-data');
+
 
 // This is hard-coded in https://www.life360.com/circles/scripts/ccf35026.scripts.js
 const LIFE360_CLIENT_SECRET = "cFJFcXVnYWJSZXRyZTRFc3RldGhlcnVmcmVQdW1hbUV4dWNyRUh1YzptM2ZydXBSZXRSZXN3ZXJFQ2hBUHJFOTZxYWtFZHI0Vg==";
+const LIFE360_API = "https://api.life360.com/v3"
+
+const authHeaders = (session) => ({
+    headers: {'Authorization': `${session.token_type} ${session.access_token}`}
+});
+
+const handleError = (errorPrefix) => (error) => {
+    if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        throw new Error(`${errorPrefix}: ${error.response.status} ${error.response.data.errorMessage}`)
+    } else if (error.request) {
+        // The request was made but no response was received
+        // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+        // http.ClientRequest in node.js
+        throw new Error(`${errorPrefix}: ${error.response.status} ${error.response.data}`)
+    } else {
+        // Something happened in setting up the request that triggered an Error
+        throw new Error(`${errorPrefix}: ${error.message}`)
+    }
+}
 
 /**
  * Login to life360.com and get an oauth token.
@@ -15,149 +36,72 @@ const LIFE360_CLIENT_SECRET = "cFJFcXVnYWJSZXRyZTRFc3RldGhlcnVmcmVQdW1hbUV4dWNyR
  * countryCode:  Optional phone country code, defaults to 1 if not specified.
  * returns:      Life360 session.
  */
-module.exports.authenticate = function (username, password, phone, countryCode) {
-  return new Promise((resolve, reject) => {
-    countryCode = typeof countryCode !== 'undefined' ? countryCode : 1;
+module.exports.authenticate = function (username, password) {
     username = typeof username !== 'undefined' ? username : '';
-    phone = typeof phone !== 'undefined' ? phone : '';
 
-    if (!password) throw new Error("No password specified.");
+    if (!password) return Promise.reject(new Error("No password specified."))
 
-    const LIFE360_LOGIN_URL = "https://api.life360.com/v3/oauth2/token.json";
-    const LIFE360_LOGIN_POSTDATA = `countryCode=${countryCode}&username=${username}&phone=${phone}&password=${password}&grant_type=password`;
-
-    const options = {
-      url: LIFE360_LOGIN_URL,
-      method: 'POST',
-      body: LIFE360_LOGIN_POSTDATA,
-      headers: {
-        'Authorization': `Authorization: Basic ${LIFE360_CLIENT_SECRET}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      json: true
+    const form = {
+        username,
+        password,
+        grant_type: 'password'
     };
-    // console.log(`Logging in as user: ${username}, password: ${password}`);
-    request(options)
-      .then(response => {
-        if (response.statusCode != 200) {
-          reject(new Error(`Life360 server error logging in: ${response.statusCode}`));
+    const bodyFormData = Object.keys(form).reduce((formData, key) => {
+        formData.append(key, form[key]);
+        return formData;
+    },  new FormData())
+
+    return axios.post(`${LIFE360_API}/oauth2/token.json`, bodyFormData, {
+        headers: bodyFormData.getHeaders({'Authorization': `Authorization: Basic ${LIFE360_CLIENT_SECRET}`})
+    }).then(response => {
+        if (!response.data.access_token) {
+            throw new Error("Unauthorized");
+        } else {
+            return {
+                access_token: response.data.access_token,
+                token_type: response.data.token_type
+            };
         }
-        response = response.body;
-        if (!response['access_token']) throw new Error("Unauthorized");
-        const session = {
-          access_token: response['access_token'],
-          token_type: response['token_type']
-        }
-        // console.log(`Logged in as user: ${username}, phone: ${phone}, access_token: ${session.access_token}`);
-        resolve(session);
-      })
-      .catch(err => {
-        reject(new Error("Unauthorized"));
-      });
-  });
+    }).catch(handleError('Life360 server error logging in'))
 }
 
 /**
  * Fetch the user's circles
  */
 module.exports.circles = function (session) {
-  if (!session) throw new Error("session not specified");
-  return new Promise((resolve, reject) => {
-    const LIFE360_CIRCLES_URL = "https://api.life360.com/v3/circles"
-    const options = {
-      url: LIFE360_CIRCLES_URL,
-      headers: {
-        'Authorization': `${session.token_type} ${session.access_token}`
-      },
-      json: true
-    };
-    // console.log(`Fetching circles at ${LIFE360_CIRCLES_URL}`);
-    request(options)
-      .then(response => {
-        if (response.statusCode != 200) {
-          reject(new Error(`Life360 server error getting circles: ${response.statusCode}`));
-        }
-        let circles = response.body.circles;
-        //console.log("Returning circles: " + JSON.stringify(circles));
-        resolve(circles);
-      });
-  });
+    if (!session) return Promise.reject(new Error("session not specified"))
+    return axios.get(`${LIFE360_API}/circles`, authHeaders(session))
+        .then(({data}) => data.circles)
+        .catch(handleError('Life360 server error getting circles'))
 }
 
 /**
  * Fetch a specific circle by circle ID
  */
 module.exports.circle = function (session, circleId) {
-  return new Promise((resolve, reject) => {
-    if (!session) throw new Error("session not specified");
-    if (!circleId) throw new Error("circleId not specified");
-    const LIFE360_CIRCLE_URL = `https://api.life360.com/v3/circles/${circleId}`
-    const options = {
-      url: LIFE360_CIRCLE_URL,
-      headers: {
-        'Authorization': `${session.token_type} ${session.access_token}`
-      },
-      json: true
-    };
-    // console.log(`Fetching circle at ${LIFE360_CIRCLE_URL}`);
-    request(options)
-      .then(response => {
-        if (response.statusCode != 200) {
-          reject(new Error(`Life360 server error getting circle: ${response.statusCode}`));
-        }
-        let circle = response.body;
-        resolve(circle);
-      });
-  });
+    if (!session) return Promise.reject(new Error("session not specified"))
+    if (!circleId) return Promise.reject(new Error("circleId not specified"))
+    return axios.get(`${LIFE360_API}/circles/${circleId}`, authHeaders(session))
+        .then(({data}) => data)
+        .catch(handleError('Life360 server error getting circle'))
 }
 
 /**
  * Fetch the user's places
  */
 module.exports.places = function (session, circleId) {
-  if (!session) throw new Error("session not specified");
-  return new Promise((resolve, reject) => {
-    const LIFE360_PLACES_URL = `https://api.life360.com/v3/circles/${circleId}/allplaces`
-    const options = {
-      url: LIFE360_PLACES_URL,
-      headers: {
-        'Authorization': `${session.token_type} ${session.access_token}`
-      },
-      json: true
-    };
-    // console.log(`Fetching places at ${LIFE360_PLACES_URL}`);
-    request(options)
-      .then(response => {
-        if (response.statusCode != 200) {
-          reject(new Error(`Life360 server error getting places: ${response.statusCode}`));
-        }
-        let places = response.body.places;
-        resolve(places);
-      });
-  });
+    if (!session) return Promise.reject(new Error("session not specified"))
+    return axios.get(`${LIFE360_API}/circles/${circleId}/allplaces`, authHeaders(session))
+        .then(({data}) => data.places)
+        .catch(handleError('Life360 server error getting places'))
 }
 
 /**
  * Fetch the user's members
  */
 module.exports.members = function (session, circleId) {
-  if (!session) throw new Error("session not specified");
-  return new Promise((resolve, reject) => {
-    const LIFE360_MEMBERS_URL = `https://api.life360.com/v3/circles/${circleId}/members`
-    const options = {
-      url: LIFE360_MEMBERS_URL,
-      headers: {
-        'Authorization': `${session.token_type} ${session.access_token}`
-      },
-      json: true
-    };
-    request(options)
-      .then(response => {
-        if (response.statusCode != 200) {
-          reject(new Error(`Life360 server error getting members: ${response.statusCode}`));
-        }
-        let members = response.body.members;
-        resolve(members);
-      });
-  });
+    if (!session) return Promise.reject(new Error("session not specified"))
+    return axios.get(`${LIFE360_API}/circles/${circleId}/members`, authHeaders(session))
+        .then(({data}) => data.members)
+        .catch(handleError('Life360 server error getting members'))
 }
