@@ -36,3 +36,15 @@ Examples of location change events to monitor:
 - First person (in a Life360 "circle") arrives at a specific place
 - Last person (in a Life360 "circle") leaves a specific place
 - Any person in any circle leaves/arrives at a specific (or any) place
+
+## Install
+
+To install the latest stable npm-published release, use the palette manager in node-red.  To install the latest stable npm-published release from the command line:
+
+    cd ~/.node-red
+    npm i node-red-contrib-life360
+
+To install the latest development version:
+
+    cd ~/.node-red
+    npm i https://github.com/hepcat72/node-red-contrib-life360
