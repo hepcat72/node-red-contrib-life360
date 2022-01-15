@@ -115,8 +115,12 @@ module.exports = function (RED) {
 
                 for (var i = 0; i < members.length; i++) {
                     let member = members[i];
-                    let locationName = member.location.name;
-                    let locationId = member.location.sourceId; 
+                    let locationName = null;
+                    let locationId = null;
+                    if (typeof member.location !== 'undefined' && member.location != null) {
+                        locationName = member.location.name;
+                        locationId = member.location.sourceId;
+                    }
                     let oldLocationId = null;
                     let oldLocationName = null;
                     if (updated_locations[circleId] &&
