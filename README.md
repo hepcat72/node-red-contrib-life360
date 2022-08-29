@@ -6,6 +6,9 @@ node-red-contrib-life360
 
 [Life360](https://www.life360.com) is an iOS/Android app for location tracking and geofencing your own (and friends'/family) location.  It has a multitude of features, but this repo is explicitly for triggering home automations in [Node Red](http://nodered.org).  It mimmicks the triggers available in the [IFTTT Life360 service](http://ifttt.com/life360) by providing triggers for:
 
+- First to arrive
+- Last to leave
+
 This package adds 2 nodes to Node Red:
 
 - Server node (which contains login credentials and communicates with Life360)
