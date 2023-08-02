@@ -27,10 +27,10 @@ It fixes the following bugs:
 
 It adds the following filters for location change events:
 
-- Selected (or any) circle
-- Selected, any, first, or last person
-- Selected or any place
-- Event type selection: arrive, leave, or either
+- Circle: Selected or any
+- Person: Selected, any, first, or last
+- Place: Selected or any
+- Event type: Arrive, leave, or either
 
 Examples of location change events to monitor:
 
