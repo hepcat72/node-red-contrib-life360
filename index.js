@@ -5,7 +5,8 @@ const FormData = require('form-data');
 
 // This is hard-coded in https://www.life360.com/circles/scripts/ccf35026.scripts.js
 const LIFE360_CLIENT_SECRET = "cFJFcXVnYWJSZXRyZTRFc3RldGhlcnVmcmVQdW1hbUV4dWNyRUh1YzptM2ZydXBSZXRSZXN3ZXJFQ2hBUHJFOTZxYWtFZHI0Vg==";
-const LIFE360_API = "https://api.life360.com/v3"
+const LIFE360_API = "https://api-cloudfront.life360.com/v3"
+const USER_AGENT = "node-red-contrib-life360"
 
 const authHeaders = (session) => ({
     headers: {'Authorization': `${session.token_type} ${session.access_token}`}
@@ -15,7 +16,7 @@ const handleError = (errorPrefix) => (error) => {
     if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        throw new Error(`${errorPrefix}: ${error.response.status} ${error.toString()}`)
+        throw new Error(`${errorPrefix}: ${error.response.status} ${error.toString()} ${error.response.data.errorMessage}`)
     } else if (error.request) {
         // The request was made but no response was received
         // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
@@ -52,7 +53,7 @@ module.exports.authenticate = function (username, password) {
     },  new FormData())
 
     return axios.post(`${LIFE360_API}/oauth2/token.json`, bodyFormData, {
-        headers: bodyFormData.getHeaders({'Authorization': `Authorization: Basic ${LIFE360_CLIENT_SECRET}`})
+        headers: bodyFormData.getHeaders({'User-Agent': `${USER_AGENT}`, 'Authorization': `Authorization: Basic ${LIFE360_CLIENT_SECRET}`})
     }).then(response => {
         if (!response.data.access_token) {
             throw new Error("Unauthorized");
