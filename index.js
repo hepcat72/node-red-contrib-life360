@@ -4,8 +4,9 @@ const FormData = require('form-data');
 
 
 // This is hard-coded in https://www.life360.com/circles/scripts/ccf35026.scripts.js
-const LIFE360_CLIENT_SECRET = "cFJFcXVnYWJSZXRyZTRFc3RldGhlcnVmcmVQdW1hbUV4dWNyRUh1YzptM2ZydXBSZXRSZXN3ZXJFQ2hBUHJFOTZxYWtFZHI0Vg==";
-const LIFE360_API = "https://api-cloudfront.life360.com/v3"
+// const LIFE360_CLIENT_SECRET = "cFJFcXVnYWJSZXRyZTRFc3RldGhlcnVmcmVQdW3hbUV4dWNyRUh1YzptM2ZydXBSZXRSZXN3ZXJFQ2hBUHJFOTZxYWtFZHI0Vg==";
+const LIFE360_CLIENT_SECRET = "Y2F0aGFwYWNyQVBoZUtVc3RlOGV2ZXZldnVjSGFmZVRydVl1ZnJhYzpkOEM5ZVlVdkE2dUZ1YnJ1SmVnZXRyZVZ1dFJlQ1JVWQ==";
+const LIFE360_API = "https://api-cloudfront.life360.com:443/v3"
 const USER_AGENT = "node-red-contrib-life360"
 
 const authHeaders = (session) => ({
