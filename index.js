@@ -56,7 +56,7 @@ module.exports.authenticate = function (username, password) {
         return formData;
     },  new FormData())
 
-    return axios.post(`${LIFE360_API}/oauth2/token`, bodyFormData, {
+    return axios.post(`${LIFE360_API}/oauth2/token.json`, bodyFormData, {
         headers: bodyFormData.getHeaders({'User-Agent': `${USER_AGENT}`, 'Authorization': `Authorization: Basic ${LIFE360_CLIENT_SECRET}`})
     }).then(response => {
         if (!response.data.access_token) {
