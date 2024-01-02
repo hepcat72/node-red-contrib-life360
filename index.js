@@ -6,8 +6,10 @@ const FormData = require('form-data');
 // This is hard-coded in https://www.life360.com/circles/scripts/ccf35026.scripts.js
 // const LIFE360_CLIENT_SECRET = "cFJFcXVnYWJSZXRyZTRFc3RldGhlcnVmcmVQdW3hbUV4dWNyRUh1YzptM2ZydXBSZXRSZXN3ZXJFQ2hBUHJFOTZxYWtFZHI0Vg==";
 const LIFE360_CLIENT_SECRET = "Y2F0aGFwYWNyQVBoZUtVc3RlOGV2ZXZldnVjSGFmZVRydVl1ZnJhYzpkOEM5ZVlVdkE2dUZ1YnJ1SmVnZXRyZVZ1dFJlQ1JVWQ==";
-const LIFE360_API = "https://api-cloudfront.life360.com:443/v3"
-const USER_AGENT = "node-red-contrib-life360"
+const LIFE360_API = "https://api-cloudfront.life360.com/v3"
+const LIFE360_V4_API = "https://api-cloudfront.life360.com/v4"
+// const USER_AGENT = "node-red-contrib-life360"
+const USER_AGENT = "com.life360.android.safetymapd/KOKO/23.50.0 android/13"
 
 const authHeaders = (session) => ({
     headers: {'Authorization': `${session.token_type} ${session.access_token}`}
@@ -15,6 +17,7 @@ const authHeaders = (session) => ({
 
 const handleError = (errorPrefix) => (error) => {
     if (error.response) {
+        console.warn(error.response)
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
         throw new Error(`${errorPrefix}: ${error.response.status} ${error.toString()} ${error.response.data.errorMessage}`)
@@ -53,7 +56,7 @@ module.exports.authenticate = function (username, password) {
         return formData;
     },  new FormData())
 
-    return axios.post(`${LIFE360_API}/oauth2/token.json`, bodyFormData, {
+    return axios.post(`${LIFE360_API}/oauth2/token`, bodyFormData, {
         headers: bodyFormData.getHeaders({'User-Agent': `${USER_AGENT}`, 'Authorization': `Authorization: Basic ${LIFE360_CLIENT_SECRET}`})
     }).then(response => {
         if (!response.data.access_token) {
@@ -72,7 +75,7 @@ module.exports.authenticate = function (username, password) {
  */
 module.exports.circles = function (session) {
     if (!session) return Promise.reject(new Error("session not specified"))
-    return axios.get(`${LIFE360_API}/circles`, authHeaders(session))
+    return axios.get(`${LIFE360_V4_API}/circles`, authHeaders(session))
         .then(({data}) => data.circles)
         .catch(handleError('Life360 server error getting circles'))
 }
